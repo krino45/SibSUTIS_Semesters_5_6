@@ -1,0 +1,25 @@
+﻿1CV8LOG(ver 2.0)
+0694b98e-f396-4158-9f68-38ae6990aff8
+
+{1,071523a4-516f-4fce-ba4b-0d11ab7a1893,"",1},
+{2,"krino45",1},
+{3,"Designer",1},
+{4,"_$Session$_.Authentication",1},
+{13,1,1},
+{4,"_$Session$_.Start",2},
+{4,"_$InfoBase$_.ConfigUpdate",3},
+{4,"_$Session$_.Finish",4},
+{4,"_$InfoBase$_.DBConfigUpdateStart",5},
+{4,"_$InfoBase$_.PredefinedDataUpdate",6},
+{5,a1940233-eeff-4454-a16b-f4d798a8ab8e,"",1},
+{5,3f972fdf-08b3-40c6-b382-28306ccf21b0,"",2},
+{5,1987edc9-c758-42d6-8a94-eea71509450e,"",3},
+{4,"_$InfoBase$_.DBConfigUpdate",7},
+{4,"_$Access$_.Access",8},
+{3,"1CV8C",2},
+{4,"_$Transaction$_.Begin",9},
+{4,"_$Data$_.New",10},
+{5,1987edc9-c758-42d6-8a94-eea71509450e,"ПланВидовХарактеристик.ХарактеристикаРекламныеЩиты",3},
+{4,"_$Transaction$_.Commit",11},
+{5,3f972fdf-08b3-40c6-b382-28306ccf21b0,"Справочник.РекламныеЩиты",2},
+{3,"BackgroundJob",3}

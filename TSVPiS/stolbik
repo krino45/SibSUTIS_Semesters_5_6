@@ -1,0 +1,12 @@
+def stolbik(a: int, b: int) -> int:
+    a_digits = list(map(int, str(a)[::-1]))
+    b_digits = list(map(int, str(b)[::-1]))
+    result = 0
+    for i in range(len(b_digits)):
+        for j in range(len(a_digits)):
+            result += a_digits[j] * b_digits[i] * (10 ** (i + j))
+    return result
+#9
+
+print (stolbik(15364322,32154213))
+print (15364322 * 32154213)
