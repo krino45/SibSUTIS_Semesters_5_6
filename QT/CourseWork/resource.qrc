@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/heart.png</file>
+        <file>images/logo.png</file>
+        <file>images/dialog.png</file>
+        <file>images/greyed_heart.png</file>
+        <file>images/Sample_User_Icon.png</file>
+        <file>images/user.png</file>
+        <file>images/car.png</file>
+        <file>images/cat.png</file>
+        <file>images/couch.png</file>
+        <file>images/dress.png</file>
+        <file>images/laptop.png</file>
+        <file>images/suit_man.png</file>
+        <file>images/heart_2.png</file>
+        <file>images/placeholder.png</file>
+        <file>images/warning.png</file>
+        <file>images/logout.png</file>
+        <file>images/location_icon.png</file>
+        <file>images/search_icon.png</file>
+        <file>images/dropdown.png</file>
+    </qresource>
+</RCC>
