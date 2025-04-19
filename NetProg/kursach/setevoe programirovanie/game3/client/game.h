@@ -12,7 +12,8 @@ namespace pong
 enum GameMode
 {
     LOCAL,
-    ONLINE
+    ONLINE,
+    LOCALMULTIPLAYER
 };
 
 class Game
@@ -32,11 +33,10 @@ class Game
 
   private:
     void handleInput();
+    void updatePlayerPaddle(uint8_t input);
     void updatePlayer1Paddle(uint8_t input);
     void updatePlayer2Paddle(uint8_t input);
     void updateAI();
-    void updateGameState();
-    void resetBall();
 
     InputHandler &inputHandler;
     Renderer &renderer;
@@ -44,6 +44,7 @@ class Game
     GameState gameState;
     GameMode gameMode;
     bool isPlayer1;
+    uint8_t currentInput;
     std::string opponentName;
     std::string opponentAddress;
     std::string opponentUdpPort;

@@ -25,13 +25,6 @@ std::vector<uint8_t> createPacket(MessageType type, uint32_t frame, const void *
     return packet;
 }
 
-std::vector<uint8_t> createGameStatePacket(const GameState &state)
-{
-    std::vector<uint8_t> stateData;
-    state.serialize(stateData);
-    return createPacket(MessageType::GAME_STATE_UPDATE, state.frame, stateData.data(), stateData.size());
-}
-
 std::vector<uint8_t> createInputPacket(uint8_t inputFlags, uint32_t frame)
 {
     PlayerInput input{inputFlags, frame};
@@ -66,6 +59,19 @@ std::vector<uint8_t> createChatPacket(const std::string &sender, const std::stri
 
     // Create the complete packet
     return createPacket(MessageType::CHAT_MESSAGE, 0, chatData.data(), totalSize);
+}
+
+std::vector<uint8_t> createInputPacket(const PlayerInput &input)
+{
+    std::vector<uint8_t> packet(sizeof(NetworkHeader) + sizeof(PlayerInput));
+    NetworkHeader *header = reinterpret_cast<NetworkHeader *>(packet.data());
+
+    header->type = MessageType::PLAYER_INPUT;
+    header->frame = input.frameNumber;
+    header->dataSize = sizeof(PlayerInput);
+
+    memcpy(packet.data() + sizeof(NetworkHeader), &input, sizeof(PlayerInput));
+    return packet;
 }
 
 NetworkHeader parseHeader(const std::vector<uint8_t> &packet)

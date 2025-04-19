@@ -5,6 +5,7 @@ pong_server: \
   CMakeFiles/pong_server.dir/server/main.cpp.o \
   CMakeFiles/pong_server.dir/server/matchmaker.cpp.o \
   CMakeFiles/pong_server.dir/server/network.cpp.o \
+  CMakeFiles/pong_server.dir/server/game.cpp.o \
   CMakeFiles/pong_server.dir/common/network.cpp.o \
   /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/libpthread.a \
   /usr/lib/gcc/x86_64-linux-gnu/13/libstdc++.so \
@@ -33,7 +34,6 @@ pong_server: \
   /usr/lib/gcc/x86_64-linux-gnu/13/libgcc.a \
   /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o \
   /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o \
-  /lib/x86_64-linux-gnu/libm.so.6 \
   /lib64/ld-linux-x86-64.so.2
 
 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o:
@@ -47,6 +47,8 @@ CMakeFiles/pong_server.dir/server/main.cpp.o:
 CMakeFiles/pong_server.dir/server/matchmaker.cpp.o:
 
 CMakeFiles/pong_server.dir/server/network.cpp.o:
+
+CMakeFiles/pong_server.dir/server/game.cpp.o:
 
 CMakeFiles/pong_server.dir/common/network.cpp.o:
 
@@ -103,7 +105,5 @@ CMakeFiles/pong_server.dir/common/network.cpp.o:
 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o:
-
-/lib/x86_64-linux-gnu/libm.so.6:
 
 /lib64/ld-linux-x86-64.so.2:

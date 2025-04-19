@@ -1,26 +1,20 @@
-// server/network.h
-
 #pragma once
-
 #include "../common/network.h"
+#include "game.h"
 #include "matchmaker.h"
-#include <arpa/inet.h>
-#include <condition_variable>
-#include <fcntl.h>
-#include <iostream>
-#include <mutex>
 #include <netinet/in.h>
-#include <queue>
-#include <string.h>
-#include <string>
-#include <sys/socket.h>
 #include <thread>
-#include <unistd.h>
-#include <unordered_map>
 #include <vector>
 
 namespace pong
 {
+
+struct ConnectedClient
+{
+    int socket;
+    uint8_t playerId;
+    std::string address;
+};
 
 class NetworkManager
 {
@@ -32,14 +26,17 @@ class NetworkManager
     void process();
 
   private:
-    Matchmaker &matchmaker;
-    int serverSocket;
-    std::thread acceptThread;
-    std::unordered_map<std::string, int> clientSockets;
-    std::mutex mutex;
-
     void acceptConnections();
     void handleClient(int clientSocket, const sockaddr_in &clientAddr);
+    void broadcastGameState();
+
+    Matchmaker &matchmaker;
+    std::mutex queueMutex;
+    ServerGame serverGame;
+    int udpSocket;
+    std::thread acceptThread;
+    std::vector<ConnectedClient> connectedClients;
+    std::chrono::steady_clock::time_point lastUpdate;
 };
 
 } // namespace pong

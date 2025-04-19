@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/common/network.cpp" "CMakeFiles/pong_server.dir/common/network.cpp.o" "gcc" "CMakeFiles/pong_server.dir/common/network.cpp.o.d"
+  "/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/server/game.cpp" "CMakeFiles/pong_server.dir/server/game.cpp.o" "gcc" "CMakeFiles/pong_server.dir/server/game.cpp.o.d"
   "/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/server/main.cpp" "CMakeFiles/pong_server.dir/server/main.cpp.o" "gcc" "CMakeFiles/pong_server.dir/server/main.cpp.o.d"
   "/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/server/matchmaker.cpp" "CMakeFiles/pong_server.dir/server/matchmaker.cpp.o" "gcc" "CMakeFiles/pong_server.dir/server/matchmaker.cpp.o.d"
   "/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/server/network.cpp" "CMakeFiles/pong_server.dir/server/network.cpp.o" "gcc" "CMakeFiles/pong_server.dir/server/network.cpp.o.d"

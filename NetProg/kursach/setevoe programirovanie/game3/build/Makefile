@@ -289,6 +289,30 @@ common/network.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pong_server.dir/build.make CMakeFiles/pong_server.dir/common/network.cpp.s
 .PHONY : common/network.cpp.s
 
+server/game.o: server/game.cpp.o
+.PHONY : server/game.o
+
+# target to build an object file
+server/game.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pong_server.dir/build.make CMakeFiles/pong_server.dir/server/game.cpp.o
+.PHONY : server/game.cpp.o
+
+server/game.i: server/game.cpp.i
+.PHONY : server/game.i
+
+# target to preprocess a source file
+server/game.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pong_server.dir/build.make CMakeFiles/pong_server.dir/server/game.cpp.i
+.PHONY : server/game.cpp.i
+
+server/game.s: server/game.cpp.s
+.PHONY : server/game.s
+
+# target to generate assembly for a file
+server/game.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pong_server.dir/build.make CMakeFiles/pong_server.dir/server/game.cpp.s
+.PHONY : server/game.cpp.s
+
 server/main.o: server/main.cpp.o
 .PHONY : server/main.o
 
@@ -389,6 +413,9 @@ help:
 	@echo "... common/network.o"
 	@echo "... common/network.i"
 	@echo "... common/network.s"
+	@echo "... server/game.o"
+	@echo "... server/game.i"
+	@echo "... server/game.s"
 	@echo "... server/main.o"
 	@echo "... server/main.i"
 	@echo "... server/main.s"

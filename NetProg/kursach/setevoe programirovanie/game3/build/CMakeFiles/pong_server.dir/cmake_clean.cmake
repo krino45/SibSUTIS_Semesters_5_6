@@ -2,6 +2,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/pong_server.dir/link.d"
   "CMakeFiles/pong_server.dir/common/network.cpp.o"
   "CMakeFiles/pong_server.dir/common/network.cpp.o.d"
+  "CMakeFiles/pong_server.dir/server/game.cpp.o"
+  "CMakeFiles/pong_server.dir/server/game.cpp.o.d"
   "CMakeFiles/pong_server.dir/server/main.cpp.o"
   "CMakeFiles/pong_server.dir/server/main.cpp.o.d"
   "CMakeFiles/pong_server.dir/server/matchmaker.cpp.o"

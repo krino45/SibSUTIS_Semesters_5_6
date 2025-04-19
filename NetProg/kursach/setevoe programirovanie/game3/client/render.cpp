@@ -216,9 +216,9 @@ void Renderer::renderGoalAnimation()
 void Renderer::renderGameState(const GameState &state, float interpolation)
 {
     GameState interpolatedState = interpolateStates(prevState, state, interpolation);
-    drawPaddle(interpolatedState.player1, true);
-    drawPaddle(interpolatedState.player2, true);
-    drawBall(interpolatedState.ball, true);
+    drawPaddle(prevState.player1, true);
+    drawPaddle(prevState.player2, true);
+    drawBall(prevState.ball, true);
     drawPaddle(interpolatedState.player1);
     drawPaddle(interpolatedState.player2);
     drawBall(interpolatedState.ball);

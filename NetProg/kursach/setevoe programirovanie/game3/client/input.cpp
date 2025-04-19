@@ -136,9 +136,9 @@ uint8_t InputHandler::poll()
                 if (seq[0] == '[')
                 {
                     if (seq[1] == 'A')
-                        input |= InputFlags::UP; // Up arrow
+                        input |= InputFlags::ARROW_UP; // Up arrow
                     if (seq[1] == 'B')
-                        input |= InputFlags::DOWN; // Down arrow
+                        input |= InputFlags::ARROW_DOWN; // Down arrow
                 }
             }
         }

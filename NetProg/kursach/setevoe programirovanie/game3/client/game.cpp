@@ -66,31 +66,32 @@ void Game::start()
     }
 }
 
-void Game::update() // MAIN method
+void Game::update()
 {
     handleInput();
 
     if (gameMode == GameMode::ONLINE)
     {
-        if (isPlayer1)
-        {
-            updateGameState();
-            networkManager.sendGameState(gameState, opponentUdpPort);
-        }
-        else
-        {
-            std::cout << "mememeim player2 \n";
-            GameState receivedState;
-            networkManager.receiveGameState(receivedState);
+        networkManager.sendPlayerInput(currentInput, gameState.frame);
 
-            receivedState.player2.position = gameState.player2.position;
+        // Receive and apply game state from server
+        GameState receivedState;
+        if (networkManager.receiveGameState(receivedState))
+        {
             gameState = receivedState;
         }
     }
-    else
+    else if (gameMode == LOCAL)
     {
+        updatePlayerPaddle(currentInput);
         updateAI();
-        updateGameState();
+        gameState.update();
+    }
+    else if (gameMode == LOCALMULTIPLAYER)
+    {
+        updatePlayer1Paddle(currentInput);
+        updatePlayer2Paddle(currentInput);
+        gameState.update();
     }
 }
 
@@ -106,23 +107,26 @@ void Game::handleInput()
     if (input & InputFlags::QUIT)
     {
         running = false;
-        return;
     }
 
-    if (gameMode == GameMode::ONLINE)
+    currentInput = input;
+}
+
+void Game::updatePlayerPaddle(uint8_t input)
+{
+    if (input & InputFlags::UP || input & InputFlags::ARROW_UP)
     {
-        if (isPlayer1)
+        if (gameState.player1.position.y > 1)
         {
-            updatePlayer1Paddle(input);
-        }
-        else
-        {
-            updatePlayer2Paddle(input);
+            gameState.player1.position.y -= 1;
         }
     }
-    else
+    if (input & InputFlags::DOWN || input & InputFlags::ARROW_DOWN)
     {
-        updatePlayer1Paddle(input);
+        if (gameState.player1.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
+        {
+            gameState.player1.position.y += 1;
+        }
     }
 }
 
@@ -130,14 +134,14 @@ void Game::updatePlayer1Paddle(uint8_t input)
 {
     if (input & InputFlags::UP)
     {
-        if (gameState.player1.position.y > 0)
+        if (gameState.player1.position.y > 1)
         {
             gameState.player1.position.y -= 1;
         }
     }
     if (input & InputFlags::DOWN)
     {
-        if (gameState.player1.position.y < GameState::HEIGHT - Paddle::HEIGHT)
+        if (gameState.player1.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
         {
             gameState.player1.position.y += 1;
         }
@@ -146,16 +150,16 @@ void Game::updatePlayer1Paddle(uint8_t input)
 
 void Game::updatePlayer2Paddle(uint8_t input)
 {
-    if (input & InputFlags::UP)
+    if (input & InputFlags::ARROW_UP)
     {
-        if (gameState.player2.position.y > 0)
+        if (gameState.player2.position.y > 1)
         {
             gameState.player2.position.y -= 1;
         }
     }
-    if (input & InputFlags::DOWN)
+    if (input & InputFlags::ARROW_DOWN)
     {
-        if (gameState.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT)
+        if (gameState.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
         {
             gameState.player2.position.y += 1;
         }
@@ -174,123 +178,19 @@ void Game::updateAI()
         if (ballY < centerOfPaddle - 1.0f)
         {
             // Move up
-            if (gameState.player2.position.y > 0)
+            if (gameState.player2.position.y > 1)
             {
-                gameState.player2.position.y -= 0.5f;
+                gameState.player2.position.y -= 0.2f;
             }
         }
         else if (ballY > centerOfPaddle + 1.0f)
         {
             // Move down
-            if (gameState.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT)
+            if (gameState.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
             {
-                gameState.player2.position.y += 0.5f;
+                gameState.player2.position.y += 0.2f;
             }
         }
     }
 }
-
-void Game::updateGameState()
-{
-    // Update ball position
-    gameState.ball.position = gameState.ball.position + gameState.ball.velocity;
-
-    // Check for collision with top and bottom walls
-    if (gameState.ball.position.y <= 0 || gameState.ball.position.y >= GameState::HEIGHT - 1)
-    {
-        gameState.ball.velocity.y = -gameState.ball.velocity.y;
-        // Clamp position to prevent getting stuck in the wall
-        if (gameState.ball.position.y <= 0)
-        {
-            gameState.ball.position.y = 0;
-        }
-        else
-        {
-            gameState.ball.position.y = GameState::HEIGHT - 1;
-        }
-    }
-
-    // Check for collision with paddles
-    if (gameState.ball.position.x <= gameState.player1.position.x + Paddle::WIDTH &&
-        gameState.ball.position.x >= gameState.player1.position.x &&
-        gameState.ball.position.y >= gameState.player1.position.y &&
-        gameState.ball.position.y <= gameState.player1.position.y + Paddle::HEIGHT)
-    {
-
-        // Calculate reflection angle based on where the ball hit the paddle
-        float relativeIntersectY = (gameState.player1.position.y + (Paddle::HEIGHT / 2)) - gameState.ball.position.y;
-        float normalizedRelativeIntersectionY = (relativeIntersectY / (Paddle::HEIGHT / 2));
-        float bounceAngle = normalizedRelativeIntersectionY * (3.14159f / 4); // Max 45 degrees
-
-        gameState.ball.velocity.x = std::abs(gameState.ball.velocity.x); // Force direction away from paddle
-        gameState.ball.velocity.y = -std::sin(bounceAngle) * gameState.ball.velocity.x;
-
-        // Add a small speed increase on each hit
-        const float speedIncrease = 0.1f;
-        float currentSpeed = std::sqrt(gameState.ball.velocity.x * gameState.ball.velocity.x +
-                                       gameState.ball.velocity.y * gameState.ball.velocity.y);
-        float ratio = (currentSpeed + speedIncrease) / currentSpeed;
-
-        gameState.ball.velocity.x *= ratio;
-        gameState.ball.velocity.y *= ratio;
-    }
-
-    if (gameState.ball.position.x >= gameState.player2.position.x - Ball::RADIUS &&
-        gameState.ball.position.x <= gameState.player2.position.x &&
-        gameState.ball.position.y >= gameState.player2.position.y &&
-        gameState.ball.position.y <= gameState.player2.position.y + Paddle::HEIGHT)
-    {
-
-        // Calculate reflection angle based on where the ball hit the paddle
-        float relativeIntersectY = (gameState.player2.position.y + (Paddle::HEIGHT / 2)) - gameState.ball.position.y;
-        float normalizedRelativeIntersectionY = (relativeIntersectY / (Paddle::HEIGHT / 2));
-        float bounceAngle = normalizedRelativeIntersectionY * (3.14159f / 4); // Max 45 degrees
-
-        gameState.ball.velocity.x = -std::abs(gameState.ball.velocity.x); // Force direction away from paddle
-        gameState.ball.velocity.y = -std::sin(bounceAngle) * std::abs(gameState.ball.velocity.x);
-
-        // Add a small speed increase on each hit
-        const float speedIncrease = 0.1f;
-        float currentSpeed = std::sqrt(gameState.ball.velocity.x * gameState.ball.velocity.x +
-                                       gameState.ball.velocity.y * gameState.ball.velocity.y);
-        float ratio = (currentSpeed + speedIncrease) / currentSpeed;
-
-        gameState.ball.velocity.x *= ratio;
-        gameState.ball.velocity.y *= ratio;
-    }
-
-    // Check for scoring
-    if (gameState.ball.position.x <= 0)
-    {
-        gameState.player2.score++;
-        resetBall();
-    }
-
-    if (gameState.ball.position.x >= GameState::WIDTH - 1)
-    {
-        gameState.player1.score++;
-        resetBall();
-    }
-
-    // Update frame
-    gameState.frame++;
-}
-
-void Game::resetBall()
-{
-    // Reset ball to center with random direction
-    gameState.ball.position.x = GameState::WIDTH / 2.0f;
-    gameState.ball.position.y = GameState::HEIGHT / 2.0f;
-
-    // Random angle between -PI/4 and PI/4
-    float angle = ((std::rand() % 100) / 100.0f - 0.5f) * (3.14159f / 2);
-
-    // Direction alternates based on who scored
-    float direction = (gameState.frame % 2 == 0) ? 1.0f : -1.0f;
-
-    const float initialSpeed = 0.5f;
-    gameState.ball.velocity.x = direction * initialSpeed * std::cos(angle);
-    gameState.ball.velocity.y = initialSpeed * std::sin(angle);
-}
-
 } // namespace pong

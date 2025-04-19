@@ -1,29 +1,34 @@
 // server/main.cpp
-#include <iostream>
-#include <thread>
 #include "matchmaker.h"
 #include "network.h"
+#include <iostream>
+#include <thread>
 
-int main() {
-    // Initialize matchmaker and network
+int main()
+{
     pong::Matchmaker matchmaker;
     pong::NetworkManager networkManager(matchmaker);
 
-    // Start the server
-    if (!networkManager.startServer()) {
+    if (!networkManager.startServer())
+    {
         std::cerr << "Failed to start server." << std::endl;
         return 1;
     }
 
-    // Main server loop
-    while (true) {
-        // Accept new connections and handle matchmaking
-        matchmaker.process();
-        networkManager.process();
+    std::thread matchmakingThread([&matchmaker]() {
+        while (true)
+        {
+            matchmaker.process();
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }
+    });
 
-        // Sleep to reduce CPU usage
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (true)
+    {
+        networkManager.process();
+        std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60fps
     }
 
+    matchmakingThread.join();
     return 0;
 }

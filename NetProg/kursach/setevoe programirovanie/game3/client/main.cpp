@@ -1,6 +1,7 @@
 // client/main.cpp
 #include "../common/game_state.h"
 #include "../common/network.h"
+#include "../common/utils.h"
 #include "game.h"
 #include "input.h"
 #include "network.h"
@@ -27,11 +28,12 @@ int main()
 
         inputHandler.disableRawMode();
 
-        std::cout << "PONG GAME" << std::endl;
+        std::cout << "\nPONG GAME" << std::endl;
         std::cout << "1. Single Player" << std::endl;
-        std::cout << "2. Multiplayer (Host)" << std::endl;
-        std::cout << "3. Multiplayer (Join)" << std::endl;
-        std::cout << "9. Quit" << std::endl;
+        std::cout << "2. Local multiplayer" << std::endl;
+        std::cout << "3. Multiplayer (Host)" << std::endl;
+        std::cout << "4. Multiplayer (Join)" << std::endl;
+        std::cout << "9. (Q)uit" << std::endl;
         std::cout << "Select mode: ";
 
         std::string choice;
@@ -39,10 +41,13 @@ int main()
 
         if (choice == "1")
         {
-            // Single player mode
             game.setGameMode(pong::GameMode::LOCAL);
         }
-        else if (choice == "2" || choice == "3")
+        else if (choice == "2")
+        {
+            game.setGameMode(pong::GameMode::LOCALMULTIPLAYER);
+        }
+        else if (choice == "3" || choice == "4")
         {
             // Multiplayer mode
             game.setGameMode(pong::GameMode::ONLINE);
@@ -60,7 +65,7 @@ int main()
                 serverAddress = "127.0.0.1";
             }
 
-            if (choice == "2")
+            if (choice == "3")
                 game.setIsPlayer1(true);
             else
                 game.setIsPlayer1(false);
@@ -74,19 +79,21 @@ int main()
 
             std::cout << "Connected to server. Waiting for game to start..." << std::endl;
         }
-        else if (choice == "9")
+        else if (choice == "9" || choice == "q" || choice == "Q")
         {
             std::exit(0);
         }
         else
         {
             std::cerr << "Invalid choice." << std::endl;
-            return 1;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            pong::terminal::clearScreen();
+            continue;
         }
 
         networkManager.onMatchFound = [&](const pong::ConnectResponse &response) { game.setOpponentInfo(response); };
 
-        while (true && choice != "1")
+        while (true && (choice != "1" && choice != "2"))
         {
             if (game.ready)
             {
@@ -101,7 +108,6 @@ int main()
         {
             game.update();
             renderer.renderGameState(game.getGameState());
-
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
     }

@@ -19,21 +19,17 @@ Matchmaker::~Matchmaker()
 {
 }
 
-void Matchmaker::addPlayer(const PlayerInfo &player)
+uint8_t Matchmaker::addPlayer(const PlayerInfo &player)
 {
     std::lock_guard<std::mutex> lock(mutex);
     waitingPlayers.push(player);
     cv.notify_one();
+    return waitingPlayers.size();
 }
 
 bool Matchmaker::findMatch(PlayerInfo &player1, PlayerInfo &player2)
 {
-    std::unique_lock<std::mutex> lock(mutex);
-    if (waitingPlayers.size() < 2)
-    {
-        cv.wait(lock, [this] { return waitingPlayers.size() >= 2; });
-    }
-
+    std::lock_guard<std::mutex> lock(mutex);
     if (waitingPlayers.size() >= 2)
     {
         player2 = waitingPlayers.front();
@@ -43,10 +39,8 @@ bool Matchmaker::findMatch(PlayerInfo &player1, PlayerInfo &player2)
 
         matchedPlayers[player1.username] = player2;
         matchedPlayers[player2.username] = player1;
-
         return true;
     }
-
     return false;
 }
 
@@ -56,8 +50,6 @@ void Matchmaker::process()
     if (findMatch(player1, player2))
     {
         std::cout << "Match found: " << player1.username << " vs " << player2.username << std::endl;
-
-        // Notify players about the match
         notifyPlayerAboutMatch(player1, player2);
         notifyPlayerAboutMatch(player2, player1);
     }

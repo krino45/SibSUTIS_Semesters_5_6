@@ -35,7 +35,9 @@ enum InputFlags : uint8_t
     NONE = 0x00,
     UP = 0x01,
     DOWN = 0x02,
-    QUIT = 0x04
+    QUIT = 0x04,
+    ARROW_UP = 0x08,
+    ARROW_DOWN = 0x10,
 };
 
 // Network header for all messages
@@ -67,6 +69,7 @@ struct ConnectResponse
 
 struct PlayerInput
 {
+    uint8_t playerId;
     uint8_t flags; // Combination of InputFlags
     uint32_t frameNumber;
 };
@@ -88,9 +91,9 @@ constexpr int HEADER_SIZE = sizeof(NetworkHeader);
 
 // UDP packet serialization/deserialization functions
 std::vector<uint8_t> createPacket(MessageType type, uint32_t frame, const void *data, uint32_t dataSize);
-std::vector<uint8_t> createGameStatePacket(const GameState &state);
 std::vector<uint8_t> createInputPacket(uint8_t inputFlags, uint32_t frame);
 std::vector<uint8_t> createChatPacket(const std::string &sender, const std::string &message);
+std::vector<uint8_t> createInputPacket(const PlayerInput &input);
 
 // Helper to parse a network header from a buffer
 NetworkHeader parseHeader(const std::vector<uint8_t> &packet);

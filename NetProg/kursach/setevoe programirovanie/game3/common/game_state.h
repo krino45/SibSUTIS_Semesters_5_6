@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <iostream>
 #include <string.h>
 #include <string>
 #include <vector>
@@ -77,7 +78,7 @@ struct Ball
 
 struct GameState
 {
-    static constexpr float WIDTH = 88.0f;
+    static constexpr float WIDTH = 84.0f;
     static constexpr float HEIGHT = 24.0f;
     static constexpr float PADDLE_SPEED = 1.5f;
     static constexpr float BALL_BASE_SPEED = 0.2f;
@@ -92,77 +93,101 @@ struct GameState
     {
         ball.position = {WIDTH / 2.0f, HEIGHT / 2.0f};
         ball.speed = BALL_BASE_SPEED;
-        ball.velocity = {serve_left ? -ball.speed : ball.speed, ((rand() % 100) / 100.0f - 0.5f) * 0.5f};
+        float angle = ((std::rand() % 100) / 100.0f - 0.5f) * (3.14159f / 2);
+        ball.velocity.x = ((serve_left) ? -1.0f : 1.0f) * BALL_BASE_SPEED * std::cos(angle);
+        ball.velocity.y = BALL_BASE_SPEED * std::sin(angle);
 
         player1.position = {2.0f, HEIGHT / 2 - player1.size.y / 2};
         player2.position = {WIDTH - 2 - player2.size.x, HEIGHT / 2 - player2.size.y / 2};
     }
     void update()
     {
-        ball.last_position = ball.position;
+        // Update ball position
         ball.position = ball.position + ball.velocity;
 
-        // Wall collision
-        if (ball.position.y <= 1.0f || ball.position.y >= HEIGHT - 1.0f)
+        // Check collision with walls
+        if (ball.position.y <= 1 || ball.position.y >= HEIGHT - 2)
         {
-            ball.position.y = ball.position.y <= 1.0f ? 1.0f : HEIGHT - 1.0f;
-            ball.velocity.y *= -0.95f;
-        }
-
-        // Paddle collision
-        auto checkPaddleCollision = [this](const Paddle &paddle) {
-            return ball.position.x >= paddle.position.x - 1.0f &&
-                   ball.position.x <= paddle.position.x + paddle.size.x + 1.0f &&
-                   ball.position.y >= paddle.position.y - 0.5f &&
-                   ball.position.y <= paddle.position.y + paddle.size.y + 0.5f;
-        };
-
-        if (checkPaddleCollision(player1))
-        {
-            ball.speed = std::min(ball.speed + BALL_SPEED_INCREASE, BALL_BASE_SPEED * 2.0f);
-            float hit_pos = (ball.position.y - player1.position.y) / player1.size.y - 0.5f;
-            ball.velocity = {fabs(ball.velocity.x), hit_pos * 1.3f};
-            ball.position.x = player1.position.x + player1.size.x + 0.1f;
-        }
-        else if (checkPaddleCollision(player2))
-        {
-            ball.speed = std::min(ball.speed + BALL_SPEED_INCREASE, BALL_BASE_SPEED * 2.0f);
-            float hit_pos = (ball.position.y - player2.position.y) / player2.size.y - 0.5f;
-            ball.velocity = {-fabs(ball.velocity.x), hit_pos * 1.3f};
-            ball.position.x = player2.position.x - 0.1f;
-        }
-
-        // Normalize velocity
-        float mag = std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
-        if (mag > 0)
-        {
-            ball.velocity = (ball.velocity * (1.0f / mag)) * ball.speed;
-        }
-
-        // Scoring
-        if (ball.position.x < 0 || ball.position.x >= WIDTH)
-        {
-            if (ball.position.x < 0)
-                player2.score++;
+            ball.velocity.y = -ball.velocity.y;
+            if (ball.position.y <= 1)
+            {
+                ball.position.y = 1;
+            }
             else
-                player1.score++;
+            {
+                ball.position.y = HEIGHT - 2;
+            }
+        }
 
-            reset(ball.position.x < 0);
+        // Check for collision with paddles
+        if (ball.position.x <= player1.position.x + Paddle::WIDTH && ball.position.x >= player1.position.x &&
+            ball.position.y >= player1.position.y && ball.position.y <= player1.position.y + Paddle::HEIGHT)
+        {
+
+            // Calculate reflection angle based on where the ball hit the paddle
+            float relativeIntersectY = (player1.position.y + (Paddle::HEIGHT / 2)) - ball.position.y;
+            float normalizedRelativeIntersectionY = (relativeIntersectY / (Paddle::HEIGHT / 2));
+            float bounceAngle = normalizedRelativeIntersectionY * (3.14159f / 4); // Max 45 degrees
+
+            ball.velocity.x = std::abs(ball.velocity.x); // Force direction away from paddle
+            ball.velocity.y = -std::sin(bounceAngle) * ball.velocity.x;
+
+            // Add a small speed increase on each hit
+            const float speedIncrease = 0.1f;
+            float currentSpeed = std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+            float ratio = (currentSpeed + speedIncrease) / currentSpeed;
+
+            ball.velocity.x *= ratio;
+            ball.velocity.y *= ratio;
+        }
+
+        if (ball.position.x >= player2.position.x - Ball::RADIUS && ball.position.x <= player2.position.x &&
+            ball.position.y >= player2.position.y && ball.position.y <= player2.position.y + Paddle::HEIGHT)
+        {
+
+            // Calculate reflection angle based on where the ball hit the paddle
+            float relativeIntersectY = (player2.position.y + (Paddle::HEIGHT / 2)) - ball.position.y;
+            float normalizedRelativeIntersectionY = (relativeIntersectY / (Paddle::HEIGHT / 2));
+            float bounceAngle = normalizedRelativeIntersectionY * (3.14159f / 4); // Max 45 degrees
+
+            ball.velocity.x = -std::abs(ball.velocity.x); // Force direction away from paddle
+            ball.velocity.y = -std::sin(bounceAngle) * std::abs(ball.velocity.x);
+
+            // Add a small speed increase on each hit
+            const float speedIncrease = 0.1f;
+            float currentSpeed = std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+            float ratio = (currentSpeed + speedIncrease) / currentSpeed;
+
+            ball.velocity.x *= ratio;
+            ball.velocity.y *= ratio;
+        }
+
+        // Check for scoring
+        if (ball.position.x <= 0)
+        {
+            player2.score++;
+            reset(true);
+        }
+
+        if (ball.position.x >= WIDTH - 1)
+        {
+            player1.score++;
+            reset(false);
         }
 
         frame++;
     }
 
-    void serialize(std::vector<uint8_t> &buffer) const
+    bool deserialize(const std::vector<uint8_t> &const_buffer)
     {
-        buffer.resize(sizeof(GameState));
-        memcpy(buffer.data(), this, sizeof(GameState));
-    }
-
-    bool deserialize(const std::vector<uint8_t> &buffer)
-    {
+        std::vector<uint8_t> buffer = const_buffer;
+        buffer.shrink_to_fit();
         if (buffer.size() != sizeof(GameState))
+        {
+            std::cerr << "Deserialize failed: buffer size " << buffer.size() << " != expected " << sizeof(GameState)
+                      << std::endl;
             return false;
+        }
         memcpy(this, buffer.data(), sizeof(GameState));
         return true;
     }
