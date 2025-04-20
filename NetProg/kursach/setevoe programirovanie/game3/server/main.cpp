@@ -11,6 +11,10 @@ volatile bool running = true;
 void signalHandler(int signal)
 {
     std::cout << "Received interrupt / termination signal. Exiting..." << std::endl;
+    if (!running)
+    {
+        std::exit(1);
+    }
     running = false;
 }
 
@@ -20,16 +24,17 @@ int main()
     signal(SIGTERM, signalHandler);
 
     pong::Matchmaker matchmaker;
-    pong::ServerGame serverGame;
+    pong::GameManager gameManager;
     pong::NetworkManager networkManager;
 
-    networkManager.setServerGame(&serverGame);
+    networkManager.setGameManager(&gameManager);
     networkManager.setMatchmaker(&matchmaker);
 
-    serverGame.setNetworkManager(&networkManager);
-    serverGame.setMatchmaker(&matchmaker);
-
+    matchmaker.setGameManager(&gameManager);
     matchmaker.setNetworkManager(&networkManager);
+
+    gameManager.setMatchmaker(&matchmaker);
+    gameManager.setNetworkManager(&networkManager);
 
     if (!networkManager.startServer())
     {
@@ -41,9 +46,8 @@ int main()
     {
         matchmaker.process();
         networkManager.process();
-
         // Sleep to avoid maxing out CPU
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
     networkManager.shutdown();

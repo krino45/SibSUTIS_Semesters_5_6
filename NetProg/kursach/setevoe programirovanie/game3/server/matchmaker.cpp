@@ -6,7 +6,7 @@
 namespace pong
 {
 
-Matchmaker::Matchmaker() : networkManager(nullptr), currentPlayer1(""), currentPlayer2("")
+Matchmaker::Matchmaker() : networkManager(nullptr), gameManager(nullptr), currentPlayer1(""), currentPlayer2("")
 {
 }
 
@@ -75,11 +75,14 @@ bool Matchmaker::findMatch(PlayerInfo &player1, PlayerInfo &player2)
 
 void Matchmaker::notifyPlayersAboutMatch(const PlayerInfo &player1, const PlayerInfo &player2)
 {
-    if (!networkManager)
+    if (!networkManager || !gameManager)
     {
         std::cerr << "NetworkManager not set in Matchmaker" << std::endl;
         return;
     }
+
+    uint32_t gameId =
+        gameManager->createGame(player1.clientId, player2.clientId, false); // not starting the game to desync it a bit
 
     // Create and send match notification for player 1
     std::vector<uint8_t> packet1 = createMatchNotificationPacket(player1, player2);
@@ -90,6 +93,11 @@ void Matchmaker::notifyPlayersAboutMatch(const PlayerInfo &player1, const Player
     networkManager->sendToClient(player2.address, player2.udpPort, packet2);
 
     std::cout << "Sent match notifications to both players" << std::endl;
+
+    if (GameInstance *game = gameManager->getGame(gameId))
+    {
+        game->startGame();
+    }
 }
 
 std::string Matchmaker::getPlayer1Name()

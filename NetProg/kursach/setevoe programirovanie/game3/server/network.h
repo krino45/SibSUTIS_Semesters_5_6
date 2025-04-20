@@ -2,7 +2,10 @@
 #pragma once
 #include "../common/network.h"
 
-#include "game.h"
+#include "game_instance.h"
+#include "game_manager.h"
+#include "matchmaker.h"
+
 #include <mutex>
 #include <netinet/in.h>
 #include <queue>
@@ -15,7 +18,8 @@ namespace pong
 
 // Forward declaration
 class Matchmaker;
-class ServerGame;
+class GameManager;
+class GameInstance;
 
 struct ConnectedClient
 {
@@ -35,14 +39,15 @@ class NetworkManager
     bool startServer(uint16_t port = UDP_SERVER_PORT);
     void process();
     void shutdown();
+    size_t getClientCount() const
+    {
+        return clients.size();
+    }
 
     // Methods for sending data to clients
     void sendToClient(const std::string &clientId, const std::vector<uint8_t> &packet);
     void sendToClient(const std::string &address, uint16_t port, const std::vector<uint8_t> &packet);
-    void broadcastToAllClients(const std::vector<uint8_t> &packet);
-
-    // Get the number of connected clients
-    size_t getClientCount() const;
+    void broadcastToGame(const std::vector<uint8_t> &packet, uint32_t gameId);
 
     // Set the matchmaker reference
     void setMatchmaker(Matchmaker *matchmaker)
@@ -50,25 +55,20 @@ class NetworkManager
         this->matchmaker = matchmaker;
     }
 
-    void setServerGame(ServerGame *serverGame)
+    void setGameManager(GameManager *manager)
     {
-        this->serverGame = serverGame;
+        this->gameManager = manager;
     }
 
+    uint32_t findGameIdForClient(const std::string &clientId);
+
   private:
-    // Socket handling
     void receiveLoop();
     void handlePacket(const std::vector<uint8_t> &data, const sockaddr_in &sender);
-
-    // Packet handlers
     void handleConnectRequest(const std::vector<uint8_t> &data, const sockaddr_in &sender);
     void handleClientDisconnect(const std::string &clientId, bool notifyOthers);
     void handlePlayerInput(const std::vector<uint8_t> &data, const std::string &clientId);
-    void cleanupInactiveClients();
-    // Game state broadcast
-    void broadcastGameState();
 
-    // Helper methods
     std::string getClientIdentifier(const sockaddr_in &addr);
 
     // Socket and thread management
@@ -77,17 +77,17 @@ class NetworkManager
     bool running;
 
     // Client management
-    std::mutex clientsMutex;
+    std::recursive_mutex clientsMutex;
     std::vector<ConnectedClient> clients;
     std::unordered_map<std::string, size_t> clientIdToIndex;
 
-    // Game and time tracking
-    ServerGame *serverGame;
     std::chrono::steady_clock::time_point lastUpdate;
     std::chrono::steady_clock::time_point lastCleanupTime;
 
     // Reference to the matchmaker
     Matchmaker *matchmaker;
+
+    GameManager *gameManager;
 };
 
 } // namespace pong

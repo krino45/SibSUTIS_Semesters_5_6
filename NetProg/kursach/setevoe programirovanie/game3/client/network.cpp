@@ -76,7 +76,6 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
 
     connectionSuccess = false;
     std::thread([this]() {
-        // Try to receive connection response with timeout
         fd_set readSet;
         struct timeval timeout;
 
@@ -86,7 +85,6 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
         timeout.tv_sec = 5;
         timeout.tv_usec = 0;
 
-        // Wait up to 5 seconds for response
         int result = select(udpSocket + 1, &readSet, NULL, NULL, &timeout);
 
         if (result > 0 && FD_ISSET(udpSocket, &readSet))
@@ -110,33 +108,36 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
 
                     if (response->success)
                     {
-                        std::cout << "Successfully connected to server" << std::endl;
+                        std::lock_guard<std::mutex> lock(connectionMutex);
                         isPlayer1 = response->isPlayer1;
+                        serverAddr = fromAddr;
                         connectionSuccess = true;
 
-                        // Save server address for future communication
-                        serverAddr = fromAddr;
-
-                        // Store data / notify game
+                        std::cout << "Successfully connected to server" << std::endl;
                         if (onMatchFound)
                             onMatchFound(*response);
+
+                        connectionCV.notify_one();
                     }
                 }
             }
         }
 
-        if (!connectionSuccess)
-        {
-            std::cerr << "Connection to server failed or timed out" << std::endl;
-        }
-
-        // Continue listening for game packets
-        startListening();
+        startListening(); // Continue game packet listening
     }).detach();
 
-    // Wait a bit for the connection attempt
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    return true; // Just return true here, actual success is determined in the thread
+    {
+        std::unique_lock<std::mutex> lock(connectionMutex);
+        connectionCV.wait_for(lock, std::chrono::seconds(5), [this]() { return connectionSuccess; });
+    }
+
+    if (!connectionSuccess)
+    {
+        std::cerr << "Connection to server failed or timed out" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 void NetworkManager::startListening()
@@ -233,6 +234,7 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
     }
 
     default:
+        std::cerr << "Unknown message type: " << static_cast<int>(header->type) << "\n";
         // Handle other message types as needed
         break;
     }
@@ -261,13 +263,9 @@ void NetworkManager::sendPlayerInput(uint8_t inputFlags, uint32_t currentFrame)
 
 bool NetworkManager::receiveGameState(GameState &state)
 {
-    if (gameStateUpdated)
-    {
-        state = latestGameState;
-        gameStateUpdated = false;
-        return true;
-    }
-    return false;
+    state = latestGameState;
+    gameStateUpdated = false;
+    return true;
 }
 
 std::vector<uint8_t> NetworkManager::createInputPacket(const PlayerInput &input)

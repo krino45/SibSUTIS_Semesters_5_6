@@ -50,13 +50,15 @@ class NetworkManager
     int udpSocket;
     int tcpSocket;
     std::string serverAddress;
-    bool connectionSuccess;
     uint16_t udpPort;
     uint16_t tcpPort;
     std::string username;
     uint32_t mmr;
     std::mutex mutex;
     std::mutex callbackMutex;
+    std::mutex connectionMutex;
+    std::condition_variable connectionCV;
+    bool connectionSuccess = false;
     bool isPlayer1;
     bool hasPendingResponse;
     bool gameStateUpdated;

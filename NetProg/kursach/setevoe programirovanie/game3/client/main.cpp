@@ -75,7 +75,9 @@ int main()
                                                 1000))
             {
                 std::cerr << "Failed to connect to server." << std::endl;
-                return 1;
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                pong::terminal::clearScreen();
+                continue;
             }
 
             std::cout << "Connected to server. Waiting for game to start..." << std::endl;
@@ -94,7 +96,6 @@ int main()
 
         networkManager.onMatchFound = [&](const pong::ConnectResponse &response) { game.setOpponentInfo(response); };
         networkManager.onScoreEvent = [&](const pong::ScoreEvent &event) { renderer.renderGoalAnimation(); };
-
         networkManager.onVictoryEvent = [&](const pong::VictoryEvent &event) {
             renderer.showVictoryScreen(event.winnerName, event.player1Score, event.player2Score);
             pong::ConnectResponse empty{};
@@ -105,6 +106,7 @@ int main()
             pong::ConnectResponse empty{};
             renderer.showDisconnectMessage();
             game.setOpponentInfo(empty);
+            inputHandler.forceQuit();
         };
 
         while (true && (choice != "1" && choice != "2"))

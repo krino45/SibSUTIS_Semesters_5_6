@@ -103,6 +103,12 @@ char InputHandler::readChar()
 
 uint8_t InputHandler::poll()
 {
+    if (forcedQuit)
+    {
+        forcedQuit = false;
+        return InputFlags::QUIT;
+    }
+
     if (chatMode)
         return InputFlags::NONE;
 

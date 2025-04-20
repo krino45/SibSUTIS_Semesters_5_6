@@ -11,7 +11,7 @@
 namespace pong
 {
 
-NetworkManager::NetworkManager() : udpSocket(-1), running(false), matchmaker(nullptr), serverGame(nullptr)
+NetworkManager::NetworkManager() : udpSocket(-1), running(false), matchmaker(nullptr), gameManager(nullptr)
 {
     lastUpdate = std::chrono::steady_clock::now();
     lastCleanupTime = std::chrono::steady_clock::now();
@@ -82,11 +82,6 @@ void NetworkManager::shutdown()
         close(udpSocket);
         udpSocket = -1;
     }
-}
-
-size_t NetworkManager::getClientCount() const
-{
-    return clients.size();
 }
 
 void NetworkManager::receiveLoop()
@@ -187,7 +182,7 @@ void NetworkManager::handleConnectRequest(const std::vector<uint8_t> &data, cons
 
     // Add client to our connected clients
     {
-        std::lock_guard<std::mutex> lock(clientsMutex);
+        std::lock_guard<std::recursive_mutex> lock(clientsMutex);
 
         // Check if client already exists
         auto it = clientIdToIndex.find(clientId);
@@ -224,16 +219,6 @@ void NetworkManager::handleConnectRequest(const std::vector<uint8_t> &data, cons
 
     // Send to client's listening port, not the source port
     sendToClient(clientAddr, request->udpPort, responsePacket);
-
-    // Check if we can start a game
-    {
-        std::lock_guard<std::mutex> lock(clientsMutex);
-        if (clients.size() == 2)
-        {
-            serverGame->startGame();
-            std::cout << "Game started with 2 players!" << std::endl;
-        }
-    }
 }
 
 void NetworkManager::handlePlayerInput(const std::vector<uint8_t> &data, const std::string &clientId)
@@ -252,12 +237,11 @@ void NetworkManager::handlePlayerInput(const std::vector<uint8_t> &data, const s
     // Find player ID from client ID
     uint8_t playerId = 0;
     {
-        std::lock_guard<std::mutex> lock(clientsMutex);
+        std::lock_guard<std::recursive_mutex> lock(clientsMutex);
         auto it = clientIdToIndex.find(clientId);
         if (it != clientIdToIndex.end())
         {
             playerId = clients[it->second].playerId;
-
             // Update last activity time
             clients[it->second].lastActivityTime =
                 std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
@@ -265,152 +249,107 @@ void NetworkManager::handlePlayerInput(const std::vector<uint8_t> &data, const s
         }
     }
 
-    // Process input if player is valid
-    if (playerId > 0 && serverGame)
+    // Find which game this client is in
+    uint32_t gameId = gameManager->findGameIdForClient(clientId);
+    if (gameId == 0)
     {
-        if (input->flags == InputFlags::QUIT)
-        {
-            handleClientDisconnect(clientId, true);
-            std::lock_guard<std::mutex> lock(clientsMutex);
-            auto it = clientIdToIndex.find(clientId);
-            if (it != clientIdToIndex.end())
-            {
-                // Remove client
-                clients.erase(clients.begin() + it->second);
-                clientIdToIndex.erase(it);
+        std::cerr << "Client not in any game: " << clientId << std::endl;
+        return;
+    }
 
-                // Rebuild index map
-                clientIdToIndex.clear();
-                for (size_t i = 0; i < clients.size(); ++i)
-                {
-                    clientIdToIndex[clients[i].clientId] = i;
-                }
+    GameInstance *game = gameManager->getGame(gameId);
+    if (!game)
+    {
+        std::cerr << "Game not found: " << gameId << std::endl;
+        return;
+    }
 
-                // Stop game if there aren't enough players
-                if (clients.size() < 2 && serverGame->isActive())
-                {
-                    serverGame->stopGame();
-                }
-            }
-            matchmaker->handlePlayerDisconnect(clientId);
-
-            return;
-        }
-        else
-        {
-            serverGame->addPlayerInput(playerId, input->flags);
-        }
+    if (input->flags == InputFlags::QUIT)
+    {
+        handleClientDisconnect(clientId, true);
     }
     else
     {
-        std::cerr << "Received input from unknown client: " << clientId << std::endl;
+        game->addPlayerInput(playerId, input->flags);
     }
+}
+
+uint32_t NetworkManager::findGameIdForClient(const std::string &clientId)
+{
+    if (gameManager)
+    {
+        return gameManager->findGameIdForClient(clientId);
+    }
+    return 0;
 }
 
 void NetworkManager::handleClientDisconnect(const std::string &clientId, bool notifyOthers)
 {
-    std::lock_guard<std::mutex> lock(clientsMutex);
+    std::lock_guard<std::recursive_mutex> lock(clientsMutex);
+
     auto it = clientIdToIndex.find(clientId);
-    if (it != clientIdToIndex.end())
+    if (it == clientIdToIndex.end())
+        return;
+
+    const ConnectedClient &disconnected = clients[it->second];
+    std::cout << "Client " << clientId << " disconnected: " << disconnected.address << std::endl;
+
+    // Get game ID
+    uint32_t gameId = gameManager->findGameIdForClient(clientId);
+    GameInstance *game = gameManager->getGame(gameId);
+
+    // Prepare disconnect packet
+    std::vector<uint8_t> packet = createPacket(MessageType::DISCONNECT_EVENT, 0, nullptr, 0);
+
+    // Send disconnect packet BEFORE removing clients
+    if (notifyOthers && game)
     {
-        // Create disconnect notification packet
-        std::vector<uint8_t> packet = createPacket(MessageType::DISCONNECT_EVENT, 0, nullptr, 0);
-
-        // Remove client
-        clients.erase(clients.begin() + it->second);
-        clientIdToIndex.erase(it);
-
-        // Rebuild index map
-        clientIdToIndex.clear();
-        for (size_t i = 0; i < clients.size(); ++i)
+        // Disconnect other players
+        for (const std::string &otherClientId : game->getAllPlayers())
         {
-            clientIdToIndex[clients[i].clientId] = i;
+            if (otherClientId != clientId)
+            {
+                std::cout << "Disconnecting remaining player in game " << gameId << ": " << otherClientId << std::endl;
+                sendToClient(otherClientId, packet);
+                handleClientDisconnect(otherClientId, false); // no recursion
+            }
         }
+    }
 
-        // Notify remaining clients if requested
-        if (notifyOthers && !clients.empty())
-        {
-            broadcastToAllClients(packet);
-        }
+    // Remove this client from list
+    clients.erase(clients.begin() + it->second);
+    clientIdToIndex.erase(it);
 
-        // Stop game if there aren't enough players
-        if (clients.size() < 2 && serverGame && serverGame->isActive())
-        {
-            serverGame->stopGame();
-        }
+    // Rebuild index
+    clientIdToIndex.clear();
+    for (size_t i = 0; i < clients.size(); ++i)
+    {
+        clientIdToIndex[clients[i].clientId] = i;
+    }
+
+    // Stop and remove game (only once)
+    if (game)
+    {
+        game->stopGame();
+        gameManager->removeGame(gameId);
     }
 }
 
 void NetworkManager::process()
 {
     auto now = std::chrono::steady_clock::now();
-
-    // Process game updates
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdate);
-    if (serverGame && serverGame->isActive() && elapsed.count() >= 16)
+
+    if (elapsed.count() >= 16)
     { // ~60fps
-        serverGame->update();
-        broadcastGameState();
+        gameManager->updateAllGames();
         lastUpdate = now;
-
-        // Periodic status log
-        static int counter = 0;
-        if (++counter % 3000 == 0)
-        {
-            std::cout << "Server status - Clients: " << getClientCount()
-                      << ", Game: " << (serverGame->isActive() ? "Active" : "Inactive") << std::endl;
-        }
     }
-
-    // Periodic cleanup of inactive clients (every 30 seconds)
-    auto cleanupElapsed = std::chrono::duration_cast<std::chrono::seconds>(now - lastCleanupTime);
-    if (cleanupElapsed.count() >= 30)
-    {
-        cleanupInactiveClients();
-        lastCleanupTime = now;
-    }
-}
-
-void NetworkManager::cleanupInactiveClients()
-{
-    std::lock_guard<std::mutex> lock(clientsMutex);
-    auto currentTime =
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-    // Check each client for inactivity
-    for (auto it = clients.begin(); it != clients.end();)
-    {
-        if (currentTime - it->lastActivityTime > 30) // 30 seconds timeout
-        {
-            std::cout << "Disconnecting inactive client: " << it->clientId << std::endl;
-            handleClientDisconnect(it->clientId, true);
-            it = clients.begin(); // Start over as vector was modified
-        }
-        else
-        {
-            ++it;
-        }
-    }
-}
-
-void NetworkManager::broadcastGameState()
-{
-    if (!serverGame || !serverGame->isActive())
-    {
-        return;
-    }
-
-    // Create game state packet
-    std::vector<uint8_t> packet = createPacket(MessageType::GAME_STATE_UPDATE, serverGame->getGameState().frame,
-                                               &serverGame->getGameState(), sizeof(GameState));
-
-    // Send to all clients
-    broadcastToAllClients(packet);
 }
 
 void NetworkManager::sendToClient(const std::string &clientId, const std::vector<uint8_t> &packet)
 {
-    std::lock_guard<std::mutex> lock(clientsMutex);
+    std::lock_guard<std::recursive_mutex> lock(clientsMutex);
 
     auto it = clientIdToIndex.find(clientId);
     if (it != clientIdToIndex.end())
@@ -448,13 +387,17 @@ void NetworkManager::sendToClient(const std::string &address, uint16_t port, con
     }
 }
 
-void NetworkManager::broadcastToAllClients(const std::vector<uint8_t> &packet)
+void NetworkManager::broadcastToGame(const std::vector<uint8_t> &packet, uint32_t gameId)
 {
-    std::lock_guard<std::mutex> lock(clientsMutex);
+    std::lock_guard<std::recursive_mutex> lock(clientsMutex);
 
-    for (const auto &client : clients)
+    auto *game = gameManager->getGame(gameId);
+    if (!game)
+        return;
+
+    for (std::string id : game->getAllPlayers())
     {
-        sendToClient(client.address, client.port, packet);
+        sendToClient(id, packet);
     }
 }
 

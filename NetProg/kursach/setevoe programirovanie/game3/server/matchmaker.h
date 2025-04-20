@@ -1,6 +1,8 @@
 // server/matchmaker.h
 #pragma once
 #include "../common/network.h"
+#include "game_instance.h"
+#include "game_manager.h"
 #include <mutex>
 #include <queue>
 #include <string>
@@ -11,6 +13,8 @@ namespace pong
 
 // Forward declaration
 class NetworkManager;
+class GameInstance;
+class GameManager;
 
 struct PlayerInfo
 {
@@ -32,6 +36,11 @@ class Matchmaker
     void setNetworkManager(NetworkManager *manager)
     {
         this->networkManager = manager;
+    }
+
+    void setGameManager(GameManager *manager)
+    {
+        this->gameManager = manager;
     }
 
     // Player management
@@ -68,6 +77,7 @@ class Matchmaker
 
     // Reference to the network manager for sending packets
     NetworkManager *networkManager;
+    GameManager *gameManager;
 };
 
 } // namespace pong

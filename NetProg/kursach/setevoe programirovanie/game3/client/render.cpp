@@ -207,10 +207,9 @@ void Renderer::initializeChatArea(const std::string &opponentName)
 void Renderer::renderGoalAnimation()
 {
     terminal::setCursor(width / 2 - 3, height / 2);
-    std::cout << getColoredText("GOAL!", 196);
+    std::cout << terminal::colorText("GOAL!", 196, 155);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    terminal::setCursor(width / 2 - 3, height / 2);
-    std::cout << "       ";
+    initialize();
 }
 
 void Renderer::showMatchFoundAnimation(const std::string &opponentName)
@@ -268,6 +267,7 @@ void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score
 {
     // Save current terminal state
     terminal::showCursor();
+    terminal::clearScreen();
 
     // Create box for victory message
     int boxWidth = 40;

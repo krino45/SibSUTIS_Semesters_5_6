@@ -33,7 +33,7 @@ void Game::setOpponentInfo(const ConnectResponse &response)
     if (opponentName == "" && opponentAddress == "" && opponentTcpPort == "0" && opponentUdpPort == "0")
     {
         ready = false;
-        std::cout << "Cleared opponent info.";
+        // std::cout << "Cleared opponent info.";
         return;
     }
     ready = true;
@@ -91,13 +91,31 @@ void Game::update()
     {
         updatePlayerPaddle(currentInput);
         updateAI();
-        gameState.update();
+        if (gameState.update())
+        {
+            renderer.renderGoalAnimation();
+            int playerScore = gameState.player1.score;
+            int AIScore = gameState.player2.score;
+            if (playerScore >= gameState.VICTORY_CONDITION || AIScore >= gameState.VICTORY_CONDITION)
+            {
+                renderer.showVictoryScreen((playerScore >= AIScore) ? "P1" : "AI", playerScore, AIScore);
+            }
+        }
     }
     else if (gameMode == LOCALMULTIPLAYER)
     {
         updatePlayer1Paddle(currentInput);
         updatePlayer2Paddle(currentInput);
-        gameState.update();
+        if (gameState.update())
+        {
+            renderer.renderGoalAnimation();
+            int player1Score = gameState.player1.score;
+            int player2Score = gameState.player2.score;
+            if (player1Score >= gameState.VICTORY_CONDITION || player2Score >= gameState.VICTORY_CONDITION)
+            {
+                renderer.showVictoryScreen((player1Score >= player2Score) ? "P1" : "P2", player1Score, player2Score);
+            }
+        }
     }
 }
 

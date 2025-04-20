@@ -34,7 +34,8 @@ add_executable(pong_server
     server/main.cpp
     server/matchmaker.cpp
     server/network.cpp
-    server/game.cpp
+    server/game_instance.cpp
+    server/game_manager.cpp
     ${COMMON_SOURCES}
 )
 
