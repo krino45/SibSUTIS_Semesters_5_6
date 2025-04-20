@@ -1,6 +1,7 @@
 // server / game.cpp
 #include "game.h"
 #include <algorithm>
+#include <bits/this_thread_sleep.h>
 #include <iostream>
 
 namespace pong
@@ -9,10 +10,65 @@ namespace pong
 void ServerGame::update()
 {
     // Update ball position and handle collisions
-    gameState.update();
-
+    if (gameState.update())
+    {
+        // A goal was scored
+        handleGoalScored();
+    }
     // Process all pending player inputs
     processPlayerInputs();
+}
+
+void ServerGame::handleGoalScored()
+{
+    // Create score event packet
+    ScoreEvent scoreEvent;
+    scoreEvent.scoringPlayer = (gameState.lastScoringPlayerIsPlayer1) ? 1 : 2;
+    scoreEvent.player1Score = gameState.player1.score;
+    scoreEvent.player2Score = gameState.player2.score;
+
+    std::vector<uint8_t> packet =
+        createPacket(MessageType::SCORE_EVENT, gameState.frame, &scoreEvent, sizeof(scoreEvent));
+
+    if (networkManager)
+    {
+        networkManager->broadcastToAllClients(packet);
+    }
+
+    if (scoreEvent.player1Score >= GameState::VICTORY_CONDITION ||
+        scoreEvent.player2Score >= GameState::VICTORY_CONDITION)
+    {
+        handleVictory();
+    }
+}
+
+void ServerGame::handleVictory()
+{
+    VictoryEvent victoryEvent;
+    victoryEvent.winningPlayer = (gameState.player1.score >= GameState::VICTORY_CONDITION) ? 1 : 2;
+    victoryEvent.player1Score = gameState.player1.score;
+    victoryEvent.player2Score = gameState.player2.score;
+
+    // Get winner's name from matchmaker
+    if (matchmaker)
+    {
+        std::string winnerName =
+            (victoryEvent.winningPlayer == 1) ? matchmaker->getPlayer1Name() : matchmaker->getPlayer2Name();
+        strncpy(victoryEvent.winnerName, winnerName.c_str(), sizeof(victoryEvent.winnerName) - 1);
+        victoryEvent.winnerName[sizeof(victoryEvent.winnerName) - 1] = '\0';
+    }
+
+    std::vector<uint8_t> packet =
+        createPacket(MessageType::VICTORY_EVENT, gameState.frame, &victoryEvent, sizeof(victoryEvent));
+
+    // Broadcast victory event
+    if (networkManager)
+    {
+        networkManager->broadcastToAllClients(packet);
+    }
+
+    // Reset game after a short delay
+    std::this_thread::sleep_for(std::chrono::seconds(3));
 }
 
 void ServerGame::processPlayerInputs()

@@ -10,8 +10,13 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.h \
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/render.h \
   /usr/include/alloca.h \
+  /usr/include/arpa/inet.h \
+  /usr/include/asm-generic/bitsperlong.h \
   /usr/include/asm-generic/errno-base.h \
   /usr/include/asm-generic/errno.h \
+  /usr/include/asm-generic/posix_types.h \
+  /usr/include/asm-generic/socket.h \
+  /usr/include/asm-generic/sockios.h \
   /usr/include/c++/13/array \
   /usr/include/c++/13/backward/auto_ptr.h \
   /usr/include/c++/13/backward/binders.h \
@@ -188,8 +193,11 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/linux/close_range.h \
   /usr/include/linux/errno.h \
   /usr/include/linux/falloc.h \
+  /usr/include/linux/posix_types.h \
+  /usr/include/linux/stddef.h \
   /usr/include/locale.h \
   /usr/include/math.h \
+  /usr/include/netinet/in.h \
   /usr/include/pthread.h \
   /usr/include/sched.h \
   /usr/include/stdc-predef.h \
@@ -203,7 +211,12 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/unistd.h \
   /usr/include/wchar.h \
   /usr/include/wctype.h \
+  /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
   /usr/include/x86_64-linux-gnu/asm/errno.h \
+  /usr/include/x86_64-linux-gnu/asm/posix_types.h \
+  /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
+  /usr/include/x86_64-linux-gnu/asm/socket.h \
+  /usr/include/x86_64-linux-gnu/asm/sockios.h \
   /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h \
   /usr/include/x86_64-linux-gnu/bits/byteswap.h \
   /usr/include/x86_64-linux-gnu/bits/confname.h \
@@ -221,6 +234,7 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
   /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
   /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
+  /usr/include/x86_64-linux-gnu/bits/in.h \
   /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
   /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
   /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
@@ -237,6 +251,9 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/sched.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
   /usr/include/x86_64-linux-gnu/bits/setjmp.h \
+  /usr/include/x86_64-linux-gnu/bits/sockaddr.h \
+  /usr/include/x86_64-linux-gnu/bits/socket.h \
+  /usr/include/x86_64-linux-gnu/bits/socket_type.h \
   /usr/include/x86_64-linux-gnu/bits/stat.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
@@ -280,6 +297,7 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
@@ -313,6 +331,7 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/sys/cdefs.h \
   /usr/include/x86_64-linux-gnu/sys/select.h \
   /usr/include/x86_64-linux-gnu/sys/single_threaded.h \
+  /usr/include/x86_64-linux-gnu/sys/socket.h \
   /usr/include/x86_64-linux-gnu/sys/ttydefaults.h \
   /usr/include/x86_64-linux-gnu/sys/types.h \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
@@ -638,20 +657,30 @@ CMakeFiles/pong_client.dir/client/input.cpp.o: /home/krino45/Desktop/sem6/NetPro
 CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/main.cpp \
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/game_state.h \
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/network.h \
+  /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/utils.h \
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/game.h \
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/input.h \
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.h \
   /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/render.h \
   /usr/include/alloca.h \
+  /usr/include/arpa/inet.h \
+  /usr/include/asm-generic/bitsperlong.h \
   /usr/include/asm-generic/errno-base.h \
   /usr/include/asm-generic/errno.h \
+  /usr/include/asm-generic/posix_types.h \
+  /usr/include/asm-generic/socket.h \
+  /usr/include/asm-generic/sockios.h \
   /usr/include/c++/13/array \
+  /usr/include/c++/13/backward/auto_ptr.h \
   /usr/include/c++/13/backward/binders.h \
   /usr/include/c++/13/bit \
   /usr/include/c++/13/bits/algorithmfwd.h \
+  /usr/include/c++/13/bits/align.h \
   /usr/include/c++/13/bits/alloc_traits.h \
   /usr/include/c++/13/bits/allocated_ptr.h \
   /usr/include/c++/13/bits/allocator.h \
+  /usr/include/c++/13/bits/atomic_base.h \
+  /usr/include/c++/13/bits/atomic_lockfree_defines.h \
   /usr/include/c++/13/bits/basic_ios.h \
   /usr/include/c++/13/bits/basic_ios.tcc \
   /usr/include/c++/13/bits/basic_string.h \
@@ -659,6 +688,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/c++/13/bits/char_traits.h \
   /usr/include/c++/13/bits/charconv.h \
   /usr/include/c++/13/bits/chrono.h \
+  /usr/include/c++/13/bits/codecvt.h \
   /usr/include/c++/13/bits/concept_check.h \
   /usr/include/c++/13/bits/cpp_type_traits.h \
   /usr/include/c++/13/bits/cxxabi_forced.h \
@@ -679,8 +709,11 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/c++/13/bits/istream.tcc \
   /usr/include/c++/13/bits/locale_classes.h \
   /usr/include/c++/13/bits/locale_classes.tcc \
+  /usr/include/c++/13/bits/locale_conv.h \
   /usr/include/c++/13/bits/locale_facets.h \
   /usr/include/c++/13/bits/locale_facets.tcc \
+  /usr/include/c++/13/bits/locale_facets_nonio.h \
+  /usr/include/c++/13/bits/locale_facets_nonio.tcc \
   /usr/include/c++/13/bits/localefwd.h \
   /usr/include/c++/13/bits/memory_resource.h \
   /usr/include/c++/13/bits/memoryfwd.h \
@@ -694,12 +727,15 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/c++/13/bits/postypes.h \
   /usr/include/c++/13/bits/predefined_ops.h \
   /usr/include/c++/13/bits/ptr_traits.h \
+  /usr/include/c++/13/bits/quoted_string.h \
   /usr/include/c++/13/bits/range_access.h \
   /usr/include/c++/13/bits/refwrap.h \
   /usr/include/c++/13/bits/requires_hosted.h \
   /usr/include/c++/13/bits/shared_ptr.h \
+  /usr/include/c++/13/bits/shared_ptr_atomic.h \
   /usr/include/c++/13/bits/shared_ptr_base.h \
   /usr/include/c++/13/bits/specfun.h \
+  /usr/include/c++/13/bits/sstream.tcc \
   /usr/include/c++/13/bits/std_abs.h \
   /usr/include/c++/13/bits/std_function.h \
   /usr/include/c++/13/bits/std_mutex.h \
@@ -716,6 +752,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/c++/13/bits/stl_iterator_base_types.h \
   /usr/include/c++/13/bits/stl_pair.h \
   /usr/include/c++/13/bits/stl_queue.h \
+  /usr/include/c++/13/bits/stl_raw_storage_iter.h \
   /usr/include/c++/13/bits/stl_tempbuf.h \
   /usr/include/c++/13/bits/stl_uninitialized.h \
   /usr/include/c++/13/bits/stl_vector.h \
@@ -734,6 +771,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/c++/13/bits/vector.tcc \
   /usr/include/c++/13/cctype \
   /usr/include/c++/13/cerrno \
+  /usr/include/c++/13/chrono \
   /usr/include/c++/13/clocale \
   /usr/include/c++/13/cmath \
   /usr/include/c++/13/compare \
@@ -758,17 +796,23 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/c++/13/ext/type_traits.h \
   /usr/include/c++/13/functional \
   /usr/include/c++/13/initializer_list \
+  /usr/include/c++/13/iomanip \
   /usr/include/c++/13/ios \
   /usr/include/c++/13/iosfwd \
   /usr/include/c++/13/iostream \
   /usr/include/c++/13/istream \
   /usr/include/c++/13/limits \
+  /usr/include/c++/13/locale \
+  /usr/include/c++/13/memory \
   /usr/include/c++/13/mutex \
   /usr/include/c++/13/new \
   /usr/include/c++/13/ostream \
+  /usr/include/c++/13/pstl/execution_defs.h \
+  /usr/include/c++/13/pstl/glue_memory_defs.h \
   /usr/include/c++/13/pstl/pstl_config.h \
   /usr/include/c++/13/queue \
   /usr/include/c++/13/ratio \
+  /usr/include/c++/13/sstream \
   /usr/include/c++/13/stdexcept \
   /usr/include/c++/13/streambuf \
   /usr/include/c++/13/string \
@@ -798,11 +842,15 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/fcntl.h \
   /usr/include/features-time64.h \
   /usr/include/features.h \
+  /usr/include/libintl.h \
   /usr/include/linux/close_range.h \
   /usr/include/linux/errno.h \
   /usr/include/linux/falloc.h \
+  /usr/include/linux/posix_types.h \
+  /usr/include/linux/stddef.h \
   /usr/include/locale.h \
   /usr/include/math.h \
+  /usr/include/netinet/in.h \
   /usr/include/pthread.h \
   /usr/include/sched.h \
   /usr/include/stdc-predef.h \
@@ -816,7 +864,12 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/unistd.h \
   /usr/include/wchar.h \
   /usr/include/wctype.h \
+  /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
   /usr/include/x86_64-linux-gnu/asm/errno.h \
+  /usr/include/x86_64-linux-gnu/asm/posix_types.h \
+  /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
+  /usr/include/x86_64-linux-gnu/asm/socket.h \
+  /usr/include/x86_64-linux-gnu/asm/sockios.h \
   /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h \
   /usr/include/x86_64-linux-gnu/bits/byteswap.h \
   /usr/include/x86_64-linux-gnu/bits/confname.h \
@@ -834,6 +887,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
   /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
   /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
+  /usr/include/x86_64-linux-gnu/bits/in.h \
   /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
   /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
   /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
@@ -850,6 +904,9 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/sched.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
   /usr/include/x86_64-linux-gnu/bits/setjmp.h \
+  /usr/include/x86_64-linux-gnu/bits/sockaddr.h \
+  /usr/include/x86_64-linux-gnu/bits/socket.h \
+  /usr/include/x86_64-linux-gnu/bits/socket_type.h \
   /usr/include/x86_64-linux-gnu/bits/stat.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
@@ -893,6 +950,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
@@ -918,12 +976,15 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/c++/13/bits/error_constants.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/gthr.h \
+  /usr/include/x86_64-linux-gnu/c++/13/bits/messages_members.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
+  /usr/include/x86_64-linux-gnu/c++/13/bits/time_members.h \
   /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
   /usr/include/x86_64-linux-gnu/gnu/stubs.h \
   /usr/include/x86_64-linux-gnu/sys/cdefs.h \
   /usr/include/x86_64-linux-gnu/sys/select.h \
   /usr/include/x86_64-linux-gnu/sys/single_threaded.h \
+  /usr/include/x86_64-linux-gnu/sys/socket.h \
   /usr/include/x86_64-linux-gnu/sys/ttydefaults.h \
   /usr/include/x86_64-linux-gnu/sys/types.h \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
@@ -1798,21 +1859,11 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/network.cpp:
 
-/usr/include/x86_64-linux-gnu/sys/socket.h:
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/main.cpp:
 
-/usr/include/x86_64-linux-gnu/bits/socket_type.h:
+/usr/include/c++/13/cstring:
 
-/usr/include/x86_64-linux-gnu/bits/socket.h:
-
-/usr/include/c++/13/tr1/gamma.tcc:
-
-/usr/include/c++/13/tuple:
-
-/usr/include/c++/13/tr1/ell_integral.tcc:
-
-/usr/include/c++/13/tr1/beta_function.tcc:
-
-/usr/include/x86_64-linux-gnu/bits/types/__locale_t.h:
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/input.cpp:
 
 /usr/lib/x86_64-linux-gnu/libm.so:
 
@@ -1827,6 +1878,10 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 /usr/include/c++/13/pstl/glue_memory_defs.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/time_t.h:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.cpp:
+
+/usr/include/x86_64-linux-gnu/bits/waitflags.h:
 
 /usr/include/c++/13/iostream:
 
@@ -1944,13 +1999,25 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /usr/include/c++/13/bits/basic_ios.h:
 
-/usr/include/c++/13/istream:
+/usr/include/c++/13/memory:
 
-/usr/include/c++/13/bits/enable_special_members.h:
+/usr/include/c++/13/queue:
 
-/usr/include/c++/13/bits/stl_algo.h:
+/usr/include/c++/13/iomanip:
 
-/usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
+/usr/include/x86_64-linux-gnu/bits/timex.h:
+
+/usr/include/c++/13/bits/std_abs.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
+
+/usr/include/x86_64-linux-gnu/bits/waitstatus.h:
+
+/usr/include/x86_64-linux-gnu/bits/timesize.h:
+
+/usr/include/c++/13/bits/shared_ptr_atomic.h:
+
+/usr/include/c++/13/bits/concept_check.h:
 
 /usr/include/c++/13/bits/basic_ios.tcc:
 
@@ -1962,10 +2029,6 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /usr/include/c++/13/tr1/hypergeometric.tcc:
 
-/usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h:
-
-/usr/include/x86_64-linux-gnu/bits/getopt_posix.h:
-
 /usr/include/c++/13/bits/locale_conv.h:
 
 /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h:
@@ -1976,51 +2039,17 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /usr/include/x86_64-linux-gnu/bits/mathcalls.h:
 
-CMakeFiles/pong_client.dir/client/main.cpp.o:
+/usr/include/c++/13/bits/charconv.h:
 
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/render.h:
-
-/usr/include/c++/13/cctype:
-
-/usr/lib/x86_64-linux-gnu/libc.so:
-
-/usr/include/c++/13/bits/std_function.h:
-
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/game.h:
-
-/usr/include/c++/13/bits/cpp_type_traits.h:
-
-/usr/include/c++/13/bits/parse_numbers.h:
-
-/usr/include/c++/13/bits/atomic_lockfree_defines.h:
-
-/usr/include/x86_64-linux-gnu/bits/fp-logb.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
-
-/usr/include/c++/13/bits/cxxabi_forced.h:
-
-/usr/include/c++/13/bits/locale_classes.h:
-
-/usr/include/c++/13/bits/sstream.tcc:
-
-/usr/include/c++/13/locale:
-
-/usr/include/x86_64-linux-gnu/bits/sched.h:
-
-/usr/include/c++/13/bits/allocated_ptr.h:
-
-/usr/include/c++/13/tr1/exp_integral.tcc:
-
-/usr/include/c++/13/cstdio:
-
-/usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h:
-
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.h:
+/usr/include/c++/13/tr1/legendre_function.tcc:
 
 /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/network.h:
 
 /usr/include/c++/13/pstl/execution_defs.h:
+
+/usr/include/c++/13/backward/binders.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
 
 /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/game.cpp:
 
@@ -2030,21 +2059,49 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h:
 
-/usr/include/c++/13/debug/assertions.h:
+/usr/include/x86_64-linux-gnu/bits/getopt_posix.h:
 
-/usr/include/c++/13/bits/stl_iterator_base_funcs.h:
-
-/usr/include/alloca.h:
-
-/usr/include/c++/13/bits/deque.tcc:
-
-/usr/include/c++/13/bits/concept_check.h:
-
-/usr/include/c++/13/bits/shared_ptr_atomic.h:
+/usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h:
 
 /usr/include/c++/13/backward/auto_ptr.h:
 
 /usr/include/c++/13/condition_variable:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.h:
+
+/usr/include/c++/13/debug/assertions.h:
+
+/usr/include/c++/13/bits/stl_iterator_base_funcs.h:
+
+CMakeFiles/pong_client.dir/client/main.cpp.o:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/render.h:
+
+/usr/include/c++/13/bits/deque.tcc:
+
+/usr/include/alloca.h:
+
+/usr/include/c++/13/bits/atomic_lockfree_defines.h:
+
+/usr/include/x86_64-linux-gnu/bits/fp-logb.h:
+
+/usr/include/c++/13/bits/sstream.tcc:
+
+/usr/include/c++/13/locale:
+
+/usr/include/x86_64-linux-gnu/bits/sched.h:
+
+/usr/include/c++/13/cctype:
+
+/usr/include/c++/13/bits/quoted_string.h:
+
+/usr/include/c++/13/bits/uses_allocator.h:
+
+/usr/include/c++/13/bits/basic_string.h:
+
+/usr/include/c++/13/istream:
+
+/usr/include/c++/13/bits/enable_special_members.h:
 
 /usr/include/c++/13/cwchar:
 
@@ -2060,25 +2117,33 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/c++/13/ext/type_traits.h:
 
-/usr/include/c++/13/bits/charconv.h:
+/usr/include/asm-generic/posix_types.h:
 
-/usr/include/c++/13/tr1/legendre_function.tcc:
+/usr/include/c++/13/compare:
 
-/usr/include/c++/13/backward/binders.h:
+/usr/include/x86_64-linux-gnu/bits/setjmp.h:
 
-/usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
+/usr/include/c++/13/bits/parse_numbers.h:
 
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/utils.h:
+/usr/include/c++/13/bits/cpp_type_traits.h:
 
-/usr/include/c++/13/system_error:
+/usr/lib/x86_64-linux-gnu/libc.so:
 
-/usr/include/x86_64-linux-gnu/bits/timesize.h:
+/usr/include/c++/13/bits/std_function.h:
 
-/usr/include/c++/13/bits/exception_defines.h:
+/usr/include/c++/13/bits/stl_tempbuf.h:
+
+/usr/include/arpa/inet.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs.h:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/game.h:
 
 /usr/include/c++/13/cstddef:
 
 /usr/include/c++/13/mutex:
+
+/usr/include/c++/13/bits/exception_defines.h:
 
 /usr/include/c++/13/bits/functional_hash.h:
 
@@ -2088,9 +2153,9 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h:
 
-/usr/include/c++/13/bits/exception_ptr.h:
+/usr/include/asm-generic/socket.h:
 
-/usr/include/x86_64-linux-gnu/bits/wordsize.h:
+/usr/include/c++/13/ext/alloc_traits.h:
 
 /usr/include/c++/13/bits/atomic_base.h:
 
@@ -2103,6 +2168,24 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 /usr/include/x86_64-linux-gnu/bits/floatn-common.h:
 
 /usr/include/c++/13/bits/functexcept.h:
+
+/usr/include/c++/13/system_error:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/utils.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
+
+/usr/include/c++/13/bits/stl_algo.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
+
+/usr/include/c++/13/bits/cxxabi_forced.h:
+
+/usr/include/c++/13/bits/locale_classes.h:
+
+/usr/include/c++/13/bits/exception_ptr.h:
+
+/usr/include/x86_64-linux-gnu/bits/wordsize.h:
 
 CMakeFiles/pong_client.dir/client/render.cpp.o:
 
@@ -2130,6 +2213,14 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 
 /usr/include/c++/13/bits/stl_iterator.h:
 
+/usr/include/c++/13/bits/allocated_ptr.h:
+
+/usr/include/c++/13/tr1/exp_integral.tcc:
+
+/usr/include/c++/13/cstdio:
+
+/usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h:
+
 /usr/include/x86_64-linux-gnu/bits/select.h:
 
 /usr/include/c++/13/bits/memory_resource.h:
@@ -2137,6 +2228,12 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 /usr/lib/gcc/x86_64-linux-gnu/13/libgcc.a:
 
 /usr/include/c++/13/bits/memoryfwd.h:
+
+/usr/include/c++/13/bits/shared_ptr_base.h:
+
+/usr/include/c++/13/bits/char_traits.h:
+
+/usr/include/c++/13/bits/move.h:
 
 /usr/include/c++/13/bits/node_handle.h:
 
@@ -2158,33 +2255,17 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 
 /usr/include/x86_64-linux-gnu/bits/termios-c_cc.h:
 
-/usr/include/c++/13/bits/uses_allocator.h:
+/usr/include/c++/13/tr1/gamma.tcc:
 
-/usr/include/c++/13/bits/basic_string.h:
-
-/usr/include/c++/13/bits/quoted_string.h:
+/usr/include/c++/13/tuple:
 
 /usr/include/c++/13/ios:
 
-/usr/include/c++/13/bits/char_traits.h:
+/usr/include/c++/13/tr1/beta_function.tcc:
 
-/usr/include/c++/13/bits/move.h:
+/usr/include/x86_64-linux-gnu/bits/types/__locale_t.h:
 
-/usr/include/c++/13/bits/shared_ptr_base.h:
-
-/usr/include/c++/13/memory:
-
-/usr/include/c++/13/queue:
-
-/usr/include/c++/13/iomanip:
-
-/usr/include/x86_64-linux-gnu/bits/timex.h:
-
-/usr/include/c++/13/bits/std_abs.h:
-
-/usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
-
-/usr/include/x86_64-linux-gnu/bits/waitstatus.h:
+/usr/include/c++/13/tr1/ell_integral.tcc:
 
 /usr/include/c++/13/bits/uniform_int_dist.h:
 
@@ -2210,6 +2291,14 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 
 /usr/include/c++/13/type_traits:
 
+/usr/include/c++/13/bits/hashtable_policy.h:
+
+/usr/include/asm-generic/sockios.h:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/game_state.h:
+
+/usr/include/c++/13/typeinfo:
+
 /usr/include/x86_64-linux-gnu/bits/byteswap.h:
 
 /usr/include/c++/13/vector:
@@ -2232,7 +2321,15 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 
 /usr/include/linux/close_range.h:
 
+/usr/include/linux/posix_types.h:
+
+/usr/include/linux/stddef.h:
+
 /usr/include/locale.h:
+
+/usr/include/x86_64-linux-gnu/bits/locale.h:
+
+/usr/include/netinet/in.h:
 
 /usr/include/sched.h:
 
@@ -2253,6 +2350,22 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h:
 
 /usr/include/wchar.h:
+
+/usr/include/c++/13/tr1/modified_bessel_func.tcc:
+
+/usr/include/x86_64-linux-gnu/asm/posix_types.h:
+
+/usr/include/c++/13/bits/algorithmfwd.h:
+
+/usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h:
+
+/usr/include/x86_64-linux-gnu/asm/posix_types_64.h:
+
+/usr/include/x86_64-linux-gnu/asm/socket.h:
+
+/usr/include/x86_64-linux-gnu/asm/sockios.h:
+
+/usr/include/x86_64-linux-gnu/bits/confname.h:
 
 /usr/include/x86_64-linux-gnu/bits/cpu-set.h:
 
@@ -2286,6 +2399,12 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 
 /usr/include/x86_64-linux-gnu/bits/getopt_core.h:
 
+/usr/include/stdint.h:
+
+/usr/include/x86_64-linux-gnu/bits/in.h:
+
+/usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:
+
 /usr/include/x86_64-linux-gnu/bits/iscanonical.h:
 
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
@@ -2314,11 +2433,11 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 
 /usr/include/x86_64-linux-gnu/bits/types/locale_t.h:
 
-/usr/include/c++/13/compare:
+/usr/include/x86_64-linux-gnu/bits/sockaddr.h:
 
-/usr/include/x86_64-linux-gnu/bits/setjmp.h:
+/usr/include/x86_64-linux-gnu/bits/socket.h:
 
-/usr/include/asm-generic/posix_types.h:
+/usr/include/x86_64-linux-gnu/bits/socket_type.h:
 
 /usr/include/x86_64-linux-gnu/bits/stat.h:
 
@@ -2360,6 +2479,8 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 
 /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h:
 
+/usr/include/x86_64-linux-gnu/sys/socket.h:
+
 /lib/x86_64-linux-gnu/libm.so.6:
 
 /usr/include/x86_64-linux-gnu/bits/time.h:
@@ -2375,10 +2496,6 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h:
-
-/usr/include/x86_64-linux-gnu/bits/waitflags.h:
-
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.cpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/clock_t.h:
 
@@ -2430,20 +2547,6 @@ CMakeFiles/pong_client.dir/common/network.cpp.o:
 
 /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_base.h:
 
-/usr/include/c++/13/bits/algorithmfwd.h:
-
-/usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h:
-
-/usr/include/c++/13/tr1/modified_bessel_func.tcc:
-
-/usr/include/x86_64-linux-gnu/asm/posix_types.h:
-
-/usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:
-
-/usr/include/stdint.h:
-
-/usr/include/x86_64-linux-gnu/bits/in.h:
-
 /usr/include/c++/13/bits/uses_allocator_args.h:
 
 /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h:
@@ -2451,12 +2554,6 @@ CMakeFiles/pong_client.dir/common/network.cpp.o:
 /usr/include/wctype.h:
 
 /usr/include/x86_64-linux-gnu/c++/13/bits/time_members.h:
-
-/usr/include/x86_64-linux-gnu/gnu/stubs.h:
-
-/usr/include/c++/13/bits/stl_tempbuf.h:
-
-/usr/include/arpa/inet.h:
 
 /usr/include/x86_64-linux-gnu/sys/single_threaded.h:
 
@@ -2467,39 +2564,3 @@ CMakeFiles/pong_client.dir/common/network.cpp.o:
 /usr/include/c++/13/bits/requires_hosted.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h:
-
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/input.cpp:
-
-/usr/include/c++/13/cstring:
-
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/main.cpp:
-
-/usr/include/c++/13/ext/alloc_traits.h:
-
-/usr/include/asm-generic/socket.h:
-
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/game_state.h:
-
-/usr/include/c++/13/bits/hashtable_policy.h:
-
-/usr/include/c++/13/typeinfo:
-
-/usr/include/asm-generic/sockios.h:
-
-/usr/include/linux/posix_types.h:
-
-/usr/include/linux/stddef.h:
-
-/usr/include/x86_64-linux-gnu/bits/locale.h:
-
-/usr/include/netinet/in.h:
-
-/usr/include/x86_64-linux-gnu/asm/posix_types_64.h:
-
-/usr/include/x86_64-linux-gnu/asm/socket.h:
-
-/usr/include/x86_64-linux-gnu/bits/confname.h:
-
-/usr/include/x86_64-linux-gnu/asm/sockios.h:
-
-/usr/include/x86_64-linux-gnu/bits/sockaddr.h:

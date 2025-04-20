@@ -1,32 +1,25 @@
 // server/matchmaker.h
-
 #pragma once
-
 #include "../common/network.h"
-#include <condition_variable>
 #include <mutex>
 #include <queue>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace pong
 {
 
+// Forward declaration
+class NetworkManager;
+
 struct PlayerInfo
 {
     std::string username;
-    uint16_t udpPort;
-    uint16_t tcpPort;
-    uint32_t mmr;
+    std::string clientId;
     std::string address;
-};
-
-struct MatchNotification
-{
-    char opponentUsername[256];
-    uint16_t opponentUdpPort;
-    uint16_t opponentTcpPort;
+    uint16_t udpPort;
+    uint16_t tcpPort; // For direct player-to-player chat
+    uint32_t mmr;
 };
 
 class Matchmaker
@@ -35,21 +28,46 @@ class Matchmaker
     Matchmaker();
     ~Matchmaker();
 
-    uint8_t addPlayer(const PlayerInfo &player);
-    bool findMatch(PlayerInfo &player1, PlayerInfo &player2);
+    // Set the network manager reference
+    void setNetworkManager(NetworkManager *manager)
+    {
+        this->networkManager = manager;
+    }
+
+    // Player management
+    uint8_t registerPlayer(const PlayerInfo &player);
+
+    // Matchmaking logic
     void process();
 
-    void notifyPlayerAboutMatch(const PlayerInfo &player, const PlayerInfo &opponent);
+    // Match notification
+    void notifyPlayersAboutMatch(const PlayerInfo &player1, const PlayerInfo &player2);
 
-    std::vector<uint8_t> createMatchNotificationPacket(const PlayerInfo &player, const PlayerInfo &opponent);
+    std::string getPlayer1Name();
+    std::string getPlayer2Name();
 
-    void sendPacketToPlayer(const PlayerInfo &player, const std::vector<uint8_t> &packet);
+    void handlePlayerDisconnect(const std::string &clientId);
 
   private:
-    std::mutex mutex;
-    std::condition_variable cv;
+    // Find a match among waiting players
+    bool findMatch(PlayerInfo &player1, PlayerInfo &player2);
+
+    // Create match notification packet
+    std::vector<uint8_t> createMatchNotificationPacket(const PlayerInfo &player, const PlayerInfo &opponent);
+
+    // Queue and matching data
+    std::mutex queueMutex;
+    std::mutex playersMutex;
     std::queue<PlayerInfo> waitingPlayers;
-    std::unordered_map<std::string, PlayerInfo> matchedPlayers;
+
+    std::unordered_map<std::string, PlayerInfo> activePlayersByUsername;
+    std::unordered_map<std::string, PlayerInfo> activePlayersByClientId;
+
+    std::string currentPlayer1;
+    std::string currentPlayer2;
+
+    // Reference to the network manager for sending packets
+    NetworkManager *networkManager;
 };
 
 } // namespace pong

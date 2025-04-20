@@ -15,7 +15,7 @@ enum class MessageType : uint8_t
     // Control messages
     CONNECT_REQUEST = 0,
     CONNECT_RESPONSE,
-    DISCONNECT,
+    DISCONNECT_EVENT,
 
     // Game state messages
     GAME_STATE_UPDATE,
@@ -26,7 +26,10 @@ enum class MessageType : uint8_t
 
     // Matchmaking messages
     MATCHMAKING_REQUEST,
-    MATCHMAKING_RESPONSE
+    MATCHMAKING_RESPONSE,
+
+    SCORE_EVENT,
+    VICTORY_EVENT,
 };
 
 // Input flags
@@ -80,6 +83,21 @@ struct ChatMessageData
     uint32_t timestamp;
     uint16_t contentLength;
     char content[1024];
+};
+
+struct ScoreEvent
+{
+    uint8_t scoringPlayer; // 1 or 2
+    uint8_t player1Score;
+    uint8_t player2Score;
+};
+
+struct VictoryEvent
+{
+    uint8_t winningPlayer;
+    uint8_t player1Score;
+    uint8_t player2Score;
+    char winnerName[32];
 };
 
 // Constants for network communications

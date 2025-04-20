@@ -17,30 +17,25 @@ class Renderer
     Renderer();
     ~Renderer();
 
-    // Initialize rendering system
     bool initialize();
 
-    // Clear the screen
     void clearScreen();
 
-    // Draw the game state
     void renderGameState(const GameState &state, float interpolation = 1.0f);
 
-    // Update display of chat messages
     void renderChatMessages(const std::vector<ChatMessageData> &messages);
 
-    // Draw UI elements
     void renderScore(const GameState &state);
     void renderControls();
 
-    // Handle chat input display
     void renderChatInput(const std::string &inputText);
 
-    // Initialize chat area
     void initializeChatArea(const std::string &opponentName);
 
-    // Render a goal scored animation
     void renderGoalAnimation();
+    void showMatchFoundAnimation(const std::string &opponentName);
+    void showVictoryScreen(const std::string &winnerName, int player1Score, int player2Score);
+    void showDisconnectMessage();
 
   private:
     // Previous state for interpolation

@@ -18,6 +18,7 @@ int main()
         pong::Renderer renderer;
         pong::NetworkManager networkManager;
         pong::Game game(inputHandler, renderer, networkManager);
+
         srand(time(NULL));
 
         if (!inputHandler.initialize() || !renderer.initialize())
@@ -92,9 +93,23 @@ int main()
         }
 
         networkManager.onMatchFound = [&](const pong::ConnectResponse &response) { game.setOpponentInfo(response); };
+        networkManager.onScoreEvent = [&](const pong::ScoreEvent &event) { renderer.renderGoalAnimation(); };
+
+        networkManager.onVictoryEvent = [&](const pong::VictoryEvent &event) {
+            renderer.showVictoryScreen(event.winnerName, event.player1Score, event.player2Score);
+            pong::ConnectResponse empty{};
+            game.setOpponentInfo(empty);
+        };
+
+        networkManager.onDisconnectEvent = [&]() {
+            pong::ConnectResponse empty{};
+            renderer.showDisconnectMessage();
+            game.setOpponentInfo(empty);
+        };
 
         while (true && (choice != "1" && choice != "2"))
         {
+            networkManager.processCallbacks();
             if (game.ready)
             {
                 break;
@@ -102,12 +117,16 @@ int main()
             std::this_thread::sleep_for(std::chrono::milliseconds(32));
         }
 
+        renderer.initialize();
         game.start();
 
         while (game.running)
         {
             game.update();
+            renderer.renderScore(game.getGameState());
+            renderer.renderControls();
             renderer.renderGameState(game.getGameState());
+
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
     }

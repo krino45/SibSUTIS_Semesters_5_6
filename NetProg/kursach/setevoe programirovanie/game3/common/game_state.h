@@ -78,14 +78,16 @@ struct Ball
 
 struct GameState
 {
-    static constexpr float WIDTH = 84.0f;
-    static constexpr float HEIGHT = 24.0f;
+    static constexpr float WIDTH = 80.0f;
+    static constexpr float HEIGHT = 20.0f;
+    static constexpr int VICTORY_CONDITION = 10;
     static constexpr float PADDLE_SPEED = 1.5f;
     static constexpr float BALL_BASE_SPEED = 0.2f;
     static constexpr float BALL_SPEED_INCREASE = 0.05f;
 
     Paddle player1;
     Paddle player2;
+    bool lastScoringPlayerIsPlayer1;
     Ball ball;
     uint32_t frame;
 
@@ -100,7 +102,7 @@ struct GameState
         player1.position = {2.0f, HEIGHT / 2 - player1.size.y / 2};
         player2.position = {WIDTH - 2 - player2.size.x, HEIGHT / 2 - player2.size.y / 2};
     }
-    void update()
+    bool update()
     {
         // Update ball position
         ball.position = ball.position + ball.velocity;
@@ -166,16 +168,23 @@ struct GameState
         if (ball.position.x <= 0)
         {
             player2.score++;
+            lastScoringPlayerIsPlayer1 = false;
+            frame++;
             reset(true);
+            return true;
         }
 
         if (ball.position.x >= WIDTH - 1)
         {
             player1.score++;
+            lastScoringPlayerIsPlayer1 = true;
+            frame++;
             reset(false);
+            return true;
         }
 
         frame++;
+        return false;
     }
 
     bool deserialize(const std::vector<uint8_t> &const_buffer)

@@ -2,12 +2,34 @@
 #include "matchmaker.h"
 #include "network.h"
 #include <iostream>
+#include <signal.h>
 #include <thread>
+
+volatile bool running = true;
+
+// Signal handler
+void signalHandler(int signal)
+{
+    std::cout << "Received interrupt / termination signal. Exiting..." << std::endl;
+    running = false;
+}
 
 int main()
 {
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
+
     pong::Matchmaker matchmaker;
-    pong::NetworkManager networkManager(matchmaker);
+    pong::ServerGame serverGame;
+    pong::NetworkManager networkManager;
+
+    networkManager.setServerGame(&serverGame);
+    networkManager.setMatchmaker(&matchmaker);
+
+    serverGame.setNetworkManager(&networkManager);
+    serverGame.setMatchmaker(&matchmaker);
+
+    matchmaker.setNetworkManager(&networkManager);
 
     if (!networkManager.startServer())
     {
@@ -15,20 +37,17 @@ int main()
         return 1;
     }
 
-    std::thread matchmakingThread([&matchmaker]() {
-        while (true)
-        {
-            matchmaker.process();
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }
-    });
-
-    while (true)
+    while (running)
     {
+        matchmaker.process();
         networkManager.process();
-        std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60fps
+
+        // Sleep to avoid maxing out CPU
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
-    matchmakingThread.join();
+    networkManager.shutdown();
+
+    std::cout << "Server shutdown complete." << std::endl;
     return 0;
 }

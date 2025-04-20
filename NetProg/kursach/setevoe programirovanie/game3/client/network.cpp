@@ -1,19 +1,11 @@
 // client/network.cpp
 
 #include "network.h"
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <iostream>
-#include <netinet/in.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <thread>
-#include <unistd.h>
 
 namespace pong
 {
 
-NetworkManager::NetworkManager() : udpSocket(-1), tcpSocket(-1)
+NetworkManager::NetworkManager() : udpSocket(-1)
 {
 }
 
@@ -23,10 +15,6 @@ NetworkManager::~NetworkManager()
     {
         close(udpSocket);
     }
-    if (tcpSocket != -1)
-    {
-        close(tcpSocket);
-    }
 }
 
 bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t udpPort, uint16_t tcpPort,
@@ -34,11 +22,10 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
 {
     this->serverAddress = serverAddress;
     this->udpPort = udpPort;
-    this->tcpPort = tcpPort;
     this->username = username;
     this->mmr = mmr;
 
-    // Create UDP socket first
+    // Create UDP socket
     udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udpSocket == -1)
     {
@@ -46,7 +33,7 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
         return false;
     }
 
-    // Bind UDP socket
+    // Bind UDP socket to receive messages
     sockaddr_in clientAddr{};
     clientAddr.sin_family = AF_INET;
     clientAddr.sin_port = htons(udpPort);
@@ -59,110 +46,97 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
         return false;
     }
 
-    // Create TCP socket with timeout
-    tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (tcpSocket == -1)
-    {
-        perror("tcp socket");
-        close(udpSocket);
-        return false;
-    }
+    // Set up server address for sending
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(UDP_SERVER_PORT);
 
-    // Set timeout for connection attempt (5 seconds)
-    struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-    setsockopt(tcpSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-    setsockopt(tcpSocket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-
-    sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(TCP_SERVER_PORT);
-
-    if (inet_pton(AF_INET, serverAddress.c_str(), &addr.sin_addr) <= 0)
+    if (inet_pton(AF_INET, serverAddress.c_str(), &serverAddr.sin_addr) <= 0)
     {
         std::cerr << "Invalid server address: " << serverAddress << std::endl;
         close(udpSocket);
-        close(tcpSocket);
-        return false;
-    }
-
-    // Try to connect with retries
-    int retries = 3;
-    while (retries-- > 0)
-    {
-        if (connect(tcpSocket, (struct sockaddr *)&addr, sizeof(addr)) == 0)
-        {
-            break; // Connection successful
-        }
-
-        std::cerr << "Connection attempt failed (" << retries << " retries left)" << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-    if (retries <= 0)
-    {
-        std::cerr << "Failed to connect to server after multiple attempts" << std::endl;
-        close(udpSocket);
-        close(tcpSocket);
         return false;
     }
 
     // Prepare connection request
     ConnectRequest request;
     strncpy(request.username, username.c_str(), sizeof(request.username));
-
     request.udpPort = udpPort;
-    request.tcpPort = tcpPort;
+    request.tcpPort = tcpPort; // For direct player-to-player chat
     request.mmr = mmr;
 
     std::vector<uint8_t> packet = createPacket(MessageType::CONNECT_REQUEST, 0, &request, sizeof(request));
 
-    // Send connection request
-    if (send(tcpSocket, packet.data(), packet.size(), 0) != packet.size())
+    if (sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) !=
+        packet.size())
     {
-        perror("send");
+        perror("sendto");
         close(udpSocket);
-        close(tcpSocket);
         return false;
     }
 
-    // Receive response with timeout
-    ConnectResponse response;
-    fd_set readSet;
-    FD_ZERO(&readSet);
-    FD_SET(tcpSocket, &readSet);
+    connectionSuccess = false;
+    std::thread([this]() {
+        // Try to receive connection response with timeout
+        fd_set readSet;
+        struct timeval timeout;
 
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
+        FD_ZERO(&readSet);
+        FD_SET(udpSocket, &readSet);
 
-    ssize_t bytesReceived = recv(tcpSocket, &response, sizeof(response), 0);
-    if (bytesReceived < 0)
-    {
-        perror("recv");
-        close(udpSocket);
-        close(tcpSocket);
-        return false;
-    }
-    else if (bytesReceived == 0)
-    {
-        std::cerr << "Connection closed by server" << std::endl;
-        close(udpSocket);
-        close(tcpSocket);
-        return false;
-    }
-    else if (bytesReceived != sizeof(response))
-    {
-        std::cerr << "Received unexpected number of bytes: " << bytesReceived << "want: " << sizeof(response)
-                  << std::endl;
-        close(udpSocket);
-        close(tcpSocket);
-        return false;
-    }
+        timeout.tv_sec = 5;
+        timeout.tv_usec = 0;
 
-    std::cout << "Successfully connected to server" << std::endl;
-    startListening();
-    return true;
+        // Wait up to 5 seconds for response
+        int result = select(udpSocket + 1, &readSet, NULL, NULL, &timeout);
+
+        if (result > 0 && FD_ISSET(udpSocket, &readSet))
+        {
+            std::vector<uint8_t> buffer(1024);
+            sockaddr_in fromAddr;
+            socklen_t fromLen = sizeof(fromAddr);
+
+            ssize_t bytesReceived =
+                recvfrom(udpSocket, buffer.data(), buffer.size(), 0, (struct sockaddr *)&fromAddr, &fromLen);
+
+            if (bytesReceived > sizeof(NetworkHeader))
+            {
+                NetworkHeader *header = reinterpret_cast<NetworkHeader *>(buffer.data());
+
+                if (header->type == MessageType::CONNECT_RESPONSE &&
+                    bytesReceived >= sizeof(NetworkHeader) + sizeof(ConnectResponse))
+                {
+                    ConnectResponse *response =
+                        reinterpret_cast<ConnectResponse *>(buffer.data() + sizeof(NetworkHeader));
+
+                    if (response->success)
+                    {
+                        std::cout << "Successfully connected to server" << std::endl;
+                        isPlayer1 = response->isPlayer1;
+                        connectionSuccess = true;
+
+                        // Save server address for future communication
+                        serverAddr = fromAddr;
+
+                        // Store data / notify game
+                        if (onMatchFound)
+                            onMatchFound(*response);
+                    }
+                }
+            }
+        }
+
+        if (!connectionSuccess)
+        {
+            std::cerr << "Connection to server failed or timed out" << std::endl;
+        }
+
+        // Continue listening for game packets
+        startListening();
+    }).detach();
+
+    // Wait a bit for the connection attempt
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    return true; // Just return true here, actual success is determined in the thread
 }
 
 void NetworkManager::startListening()
@@ -185,8 +159,10 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
         return;
 
     NetworkHeader *header = (NetworkHeader *)packet.data();
-    if (header->type == MessageType::CONNECT_RESPONSE)
+
+    switch (header->type)
     {
+    case MessageType::CONNECT_RESPONSE: {
         const ConnectResponse *response =
             reinterpret_cast<const ConnectResponse *>(packet.data() + sizeof(NetworkHeader));
 
@@ -195,27 +171,89 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
                   << ", TCP: " << response->hostTcpPort << std::endl;
         std::cout << "You are player " << (response->isPlayer1 ? "1" : "2") << std::endl;
         isPlayer1 = response->isPlayer1;
-        std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // Store data / notify game
-        if (onMatchFound)
-            onMatchFound(*response);
+        std::lock_guard<std::mutex> lock(callbackMutex);
+        pendingResponse = *response;
+        hasPendingResponse = true;
+
+        break;
+    }
+
+    case MessageType::GAME_STATE_UPDATE: {
+        if (packet.size() >= sizeof(NetworkHeader) + sizeof(GameState))
+        {
+            // Parse game state and update the local game state
+            GameState state;
+            if (state.deserialize(std::vector<uint8_t>(packet.begin() + sizeof(NetworkHeader), packet.end())))
+            {
+                // Store the latest game state
+                latestGameState = state;
+                gameStateUpdated = true;
+            }
+        }
+        break;
+    }
+
+    case MessageType::SCORE_EVENT: {
+        if (packet.size() >= sizeof(NetworkHeader) + sizeof(ScoreEvent))
+        {
+            const ScoreEvent *event = reinterpret_cast<const ScoreEvent *>(packet.data() + sizeof(NetworkHeader));
+
+            // Notify game to render goal animation
+            if (onScoreEvent)
+            {
+                onScoreEvent(*event);
+            }
+        }
+        break;
+    }
+
+    case MessageType::VICTORY_EVENT: {
+        if (packet.size() >= sizeof(NetworkHeader) + sizeof(VictoryEvent))
+        {
+            const VictoryEvent *event = reinterpret_cast<const VictoryEvent *>(packet.data() + sizeof(NetworkHeader));
+
+            // Notify game to show victory screen
+            if (onVictoryEvent)
+            {
+                onVictoryEvent(*event);
+            }
+        }
+        break;
+    }
+
+    case MessageType::DISCONNECT_EVENT: {
+        // Opponent disconnected
+        if (onDisconnectEvent)
+        {
+            onDisconnectEvent();
+        }
+        break;
+    }
+
+    default:
+        // Handle other message types as needed
+        break;
     }
 }
 
 void NetworkManager::sendPlayerInput(uint8_t inputFlags, uint32_t currentFrame)
 {
     PlayerInput input;
-    input.playerId = isPlayer1 ? 1 : 2; // Add this to NetworkManager class
+    input.playerId = isPlayer1 ? 1 : 2;
     input.flags = inputFlags;
     input.frameNumber = currentFrame;
+
     if (input.flags == 0)
     {
         return;
     }
 
     std::vector<uint8_t> packet = createInputPacket(input);
-    if (send(tcpSocket, packet.data(), packet.size(), 0) != packet.size())
+
+    if (sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) !=
+        packet.size())
     {
         std::cerr << "Failed to send input packet" << std::endl;
     }
@@ -223,31 +261,11 @@ void NetworkManager::sendPlayerInput(uint8_t inputFlags, uint32_t currentFrame)
 
 bool NetworkManager::receiveGameState(GameState &state)
 {
-    std::vector<uint8_t> buffer(sizeof(NetworkHeader) + sizeof(GameState));
-    int bytesReceived = recv(tcpSocket, buffer.data(), buffer.size(), MSG_DONTWAIT);
-
-    if (bytesReceived > 0)
+    if (gameStateUpdated)
     {
-        // Verify minimum packet size
-        if (bytesReceived < sizeof(NetworkHeader))
-        {
-            std::cerr << "Packet too small for header" << std::endl;
-            return false;
-        }
-
-        NetworkHeader *header = reinterpret_cast<NetworkHeader *>(buffer.data());
-
-        // Handle only game state updates
-        if (header->type == MessageType::GAME_STATE_UPDATE)
-        {
-            if (bytesReceived != sizeof(NetworkHeader) + sizeof(GameState))
-            {
-                std::cerr << "Invalid game state packet size" << std::endl;
-                return false;
-            }
-            return state.deserialize(std::vector<uint8_t>(buffer.begin() + sizeof(NetworkHeader), buffer.end()));
-        }
-        // Silently ignore other packet types
+        state = latestGameState;
+        gameStateUpdated = false;
+        return true;
     }
     return false;
 }
@@ -267,44 +285,16 @@ std::vector<uint8_t> NetworkManager::createInputPacket(const PlayerInput &input)
 
 void NetworkManager::sendChatMessage(const std::string &message, std::string opponentUdpPort)
 {
+    // For direct player-to-player chat (bypassing server as requested)
     std::vector<uint8_t> packet = createChatPacket(username, message);
-    sendPacket(packet, opponentUdpPort);
-}
 
-void NetworkManager::receiveChatMessage(std::string &message)
-{
-    std::vector<uint8_t> packet = receivePacket();
+    // Set up recipient address for direct communication
+    sockaddr_in peerAddr;
+    peerAddr.sin_family = AF_INET;
+    peerAddr.sin_port = htons(std::stoi(opponentUdpPort));
+    inet_pton(AF_INET, serverAddress.c_str(), &peerAddr.sin_addr);
 
-    // Ensure the packet is large enough to contain the header
-    if (packet.size() < HEADER_SIZE)
-    {
-        std::cerr << "Received packet is too small to contain a valid header." << std::endl;
-        return;
-    }
-
-    // Parse the header
-    NetworkHeader header = parseHeader(packet);
-
-    // Ensure the data size is valid
-    if (header.dataSize > packet.size() - HEADER_SIZE)
-    {
-        std::cerr << "Received packet has an invalid data size." << std::endl;
-        return;
-    }
-
-    // Construct the message string from the packet data
-    message = std::string(reinterpret_cast<const char *>(packet.data() + HEADER_SIZE), header.dataSize);
-}
-
-void NetworkManager::sendPacket(const std::vector<uint8_t> &packet, std::string receivingUdpPort)
-{
-    sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    std::cout << "Sending packet to " << receivingUdpPort << "@wtver " << std::endl;
-    addr.sin_port = htons(std::stoi(receivingUdpPort));
-    inet_pton(AF_INET, serverAddress.c_str(), &addr.sin_addr);
-
-    sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+    sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&peerAddr, sizeof(peerAddr));
 }
 
 std::vector<uint8_t> NetworkManager::receivePacket()
@@ -312,15 +302,22 @@ std::vector<uint8_t> NetworkManager::receivePacket()
     std::vector<uint8_t> packet(MAX_PACKET_SIZE);
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
-    std::cout << "Getting packet from wtver " << std::endl;
 
     int bytesReceived = recvfrom(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&addr, &addrlen);
     if (bytesReceived < 0)
     {
-        perror("recvfrom");
+        if (errno == EBADF)
+        {
+            // Socket was closed, this is expected during shutdown
+            return {};
+        }
+        // Don't print error for EWOULDBLOCK or EAGAIN (non-blocking socket)
+        if (errno != EWOULDBLOCK && errno != EAGAIN)
+        {
+            perror("recvfrom");
+        }
         return {};
     }
-    std::cout << "receved " << std::endl;
 
     packet.resize(bytesReceived);
     return packet;
@@ -328,7 +325,17 @@ std::vector<uint8_t> NetworkManager::receivePacket()
 
 bool NetworkManager::isConnected()
 {
-    return tcpSocket != -1 && udpSocket != -1;
+    return connectionSuccess;
+}
+
+void NetworkManager::processCallbacks()
+{
+    std::lock_guard<std::mutex> lock(callbackMutex);
+    if (hasPendingResponse && onMatchFound)
+    {
+        onMatchFound(pendingResponse);
+        hasPendingResponse = false;
+    }
 }
 
 } // namespace pong

@@ -30,6 +30,12 @@ void Game::setOpponentInfo(const ConnectResponse &response)
     opponentAddress = response.hostAddress;
     opponentUdpPort = std::to_string(response.hostUdpPort);
     opponentTcpPort = std::to_string(response.hostTcpPort);
+    if (opponentName == "" && opponentAddress == "" && opponentTcpPort == "0" && opponentUdpPort == "0")
+    {
+        ready = false;
+        std::cout << "Cleared opponent info.";
+        return;
+    }
     ready = true;
 
     std::cout << "!!!!! Opponent info set: " << opponentName << "@" << opponentAddress << ":udp" << opponentUdpPort

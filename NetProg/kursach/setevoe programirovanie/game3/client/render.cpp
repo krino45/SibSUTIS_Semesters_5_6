@@ -213,6 +213,198 @@ void Renderer::renderGoalAnimation()
     std::cout << "       ";
 }
 
+void Renderer::showMatchFoundAnimation(const std::string &opponentName)
+{
+    // Clear the middle of the screen
+    for (int y = height / 2 - 3; y <= height / 2 + 3; y++)
+    {
+        terminal::setCursor(width / 4, y);
+        std::cout << std::string(width / 2, ' ');
+    }
+
+    // Animated countdown
+    std::string message = "MATCH FOUND: " + opponentName;
+
+    // Flash the message
+    for (int i = 0; i < 3; i++)
+    {
+        // Show message
+        terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+        std::cout << getColoredText(message, 226); // Bright yellow
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+        // Hide message
+        terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+        std::cout << std::string(message.length(), ' ');
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    // Show message one final time
+    terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+    std::cout << getColoredText(message, 226);
+
+    // Countdown animation
+    for (int i = 3; i > 0; i--)
+    {
+        terminal::setCursor(width / 2, height / 2 + 1);
+        std::cout << getColoredText("Starting in " + std::to_string(i) + "...", 245);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    // Clear the animation
+    for (int y = height / 2 - 3; y <= height / 2 + 3; y++)
+    {
+        terminal::setCursor(width / 4, y);
+        std::cout << std::string(width / 2, ' ');
+    }
+
+    // Re-draw the arena since we might have overwritten parts of it
+    drawArena();
+}
+
+void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score, int player2Score)
+{
+    // Save current terminal state
+    terminal::showCursor();
+
+    // Create box for victory message
+    int boxWidth = 40;
+    int boxHeight = 10;
+    int boxX = (width - boxWidth) / 2;
+    int boxY = (height - boxHeight) / 2;
+
+    // Draw box
+    std::cout << "\033[38;5;220m"; // Gold color
+
+    // Using ASCII characters instead of Unicode box drawing characters
+    // Top border
+    terminal::setCursor(boxX, boxY);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Side borders
+    for (int y = 1; y < boxHeight - 1; y++)
+    {
+        terminal::setCursor(boxX, boxY + y);
+        std::cout << "|";
+        terminal::setCursor(boxX + boxWidth - 1, boxY + y);
+        std::cout << "|";
+    }
+
+    // Bottom border
+    terminal::setCursor(boxX, boxY + boxHeight - 1);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Title
+    terminal::setCursor(boxX + (boxWidth - 12) / 2, boxY + 2);
+    std::cout << "\033[1;38;5;220mGAME OVER!\033[0m";
+
+    // Winner message
+    std::string message = winnerName + " wins!";
+    terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 4);
+    std::cout << getColoredText(message, winnerName == "PLAYER 1" ? 46 : 39);
+
+    // Final score
+    terminal::setCursor(boxX + (boxWidth - 15) / 2, boxY + 6);
+    std::cout << getColoredText(std::to_string(player1Score) + " - " + std::to_string(player2Score), 255);
+
+    // Press any key to continue
+    terminal::setCursor(boxX + (boxWidth - 26) / 2, boxY + 8);
+    std::cout << getColoredText("Press any key to continue", 245);
+
+    // Reset color
+    terminal::resetColor();
+
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    // Clear the victory screen
+    clearScreen();
+    drawArena();
+
+    // Hide cursor again
+    terminal::hideCursor();
+}
+
+void Renderer::showDisconnectMessage()
+{
+    // Create a box in the middle of the screen
+    int boxWidth = 30;
+    int boxHeight = 5;
+    int boxX = (width - boxWidth) / 2;
+    int boxY = (height - boxHeight) / 2;
+
+    // Draw box with red border
+    std::cout << "\033[38;5;196m"; // Red color
+
+    // Top border
+    terminal::setCursor(boxX, boxY);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Side borders
+    for (int y = 1; y < boxHeight - 1; y++)
+    {
+        terminal::setCursor(boxX, boxY + y);
+        std::cout << "|";
+        terminal::setCursor(boxX + boxWidth - 1, boxY + y);
+        std::cout << "|";
+    }
+
+    // Bottom border
+    terminal::setCursor(boxX, boxY + boxHeight - 1);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Disconnect message
+    std::string message = "OPPONENT DISCONNECTED";
+    terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
+    std::cout << getColoredText(message, 196); // Red text
+
+    // Animation: Flash the message a few times
+    for (int i = 0; i < 5; i++)
+    {
+        terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
+        if (i % 2 == 0)
+        {
+            std::cout << std::string(message.length(), ' ');
+        }
+        else
+        {
+            std::cout << getColoredText(message, 196);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    }
+
+    // Show message one final time
+    terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
+    std::cout << getColoredText(message, 196);
+
+    // Wait for a few seconds
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    // Reset color
+    terminal::resetColor();
+}
+
 void Renderer::renderGameState(const GameState &state, float interpolation)
 {
     GameState interpolatedState = interpolateStates(prevState, state, interpolation);

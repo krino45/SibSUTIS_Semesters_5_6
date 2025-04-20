@@ -1,17 +1,12 @@
 // server/matchmaker.cpp
-
 #include "matchmaker.h"
-#include <arpa/inet.h>
+#include "network.h"
 #include <iostream>
-#include <netinet/in.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
 
 namespace pong
 {
 
-Matchmaker::Matchmaker()
+Matchmaker::Matchmaker() : networkManager(nullptr), currentPlayer1(""), currentPlayer2("")
 {
 }
 
@@ -19,29 +14,27 @@ Matchmaker::~Matchmaker()
 {
 }
 
-uint8_t Matchmaker::addPlayer(const PlayerInfo &player)
+uint8_t Matchmaker::registerPlayer(const PlayerInfo &player)
 {
-    std::lock_guard<std::mutex> lock(mutex);
-    waitingPlayers.push(player);
-    cv.notify_one();
-    return waitingPlayers.size();
-}
+    std::lock_guard<std::mutex> lock(queueMutex);
 
-bool Matchmaker::findMatch(PlayerInfo &player1, PlayerInfo &player2)
-{
-    std::lock_guard<std::mutex> lock(mutex);
-    if (waitingPlayers.size() >= 2)
+    // Check if player is already registered
+    if (activePlayersByUsername.find(player.username) != activePlayersByUsername.end() ||
+        activePlayersByClientId.find(player.clientId) != activePlayersByClientId.end())
     {
-        player2 = waitingPlayers.front();
-        waitingPlayers.pop();
-        player1 = waitingPlayers.front();
-        waitingPlayers.pop();
-
-        matchedPlayers[player1.username] = player2;
-        matchedPlayers[player2.username] = player1;
-        return true;
+        std::cerr << "Player already registered: " << player.username << std::endl;
+        return 0;
     }
-    return false;
+
+    // Store player info in both maps for quick lookups
+    activePlayersByUsername[player.username] = player;
+    activePlayersByClientId[player.clientId] = player;
+
+    // Add to waiting queue
+    waitingPlayers.push(player);
+
+    // Return player position as temporary ID
+    return waitingPlayers.size();
 }
 
 void Matchmaker::process()
@@ -50,58 +43,124 @@ void Matchmaker::process()
     if (findMatch(player1, player2))
     {
         std::cout << "Match found: " << player1.username << " vs " << player2.username << std::endl;
-        notifyPlayerAboutMatch(player1, player2);
-        notifyPlayerAboutMatch(player2, player1);
+
+        // Store current players
+        {
+            std::lock_guard<std::mutex> lock(playersMutex);
+            currentPlayer1 = player1.username;
+            currentPlayer2 = player2.username;
+        }
+
+        notifyPlayersAboutMatch(player1, player2);
     }
 }
 
-void Matchmaker::notifyPlayerAboutMatch(const PlayerInfo &player, const PlayerInfo &opponent)
+bool Matchmaker::findMatch(PlayerInfo &player1, PlayerInfo &player2)
 {
-    // Create a match notification packet
-    std::vector<uint8_t> packet = createMatchNotificationPacket(player, opponent);
+    std::lock_guard<std::mutex> lock(queueMutex);
 
-    // Send the packet to the player
-    sendPacketToPlayer(player, packet);
-    std::cout << "Sent notification packet (" << packet.data() << ") to player "
-              << player.username + "@" + player.address + ":" << player.udpPort << std::endl;
+    if (waitingPlayers.size() >= 2)
+    {
+        player1 = waitingPlayers.front();
+        waitingPlayers.pop();
+
+        player2 = waitingPlayers.front();
+        waitingPlayers.pop();
+
+        return true;
+    }
+
+    return false;
+}
+
+void Matchmaker::notifyPlayersAboutMatch(const PlayerInfo &player1, const PlayerInfo &player2)
+{
+    if (!networkManager)
+    {
+        std::cerr << "NetworkManager not set in Matchmaker" << std::endl;
+        return;
+    }
+
+    // Create and send match notification for player 1
+    std::vector<uint8_t> packet1 = createMatchNotificationPacket(player1, player2);
+    networkManager->sendToClient(player1.address, player1.udpPort, packet1);
+
+    // Create and send match notification for player 2
+    std::vector<uint8_t> packet2 = createMatchNotificationPacket(player2, player1);
+    networkManager->sendToClient(player2.address, player2.udpPort, packet2);
+
+    std::cout << "Sent match notifications to both players" << std::endl;
+}
+
+std::string Matchmaker::getPlayer1Name()
+{
+    std::lock_guard<std::mutex> lock(playersMutex);
+    return currentPlayer1;
+}
+
+std::string Matchmaker::getPlayer2Name()
+{
+    std::lock_guard<std::mutex> lock(playersMutex);
+    return currentPlayer2;
+}
+
+void Matchmaker::handlePlayerDisconnect(const std::string &clientId)
+{
+    std::lock_guard<std::mutex> lock(queueMutex);
+
+    // Remove from active players maps
+    auto clientIt = activePlayersByClientId.find(clientId);
+    if (clientIt != activePlayersByClientId.end())
+    {
+        const std::string &username = clientIt->second.username;
+        activePlayersByUsername.erase(username);
+        activePlayersByClientId.erase(clientId);
+
+        // Check if this was one of the current players
+        std::lock_guard<std::mutex> plock(playersMutex);
+        if (username == currentPlayer1)
+        {
+            currentPlayer1.clear();
+        }
+        if (username == currentPlayer2)
+        {
+            currentPlayer2.clear();
+        }
+    }
+
+    // Remove from waiting queue if present
+    std::queue<PlayerInfo> tempQueue;
+    while (!waitingPlayers.empty())
+    {
+        PlayerInfo player = waitingPlayers.front();
+        waitingPlayers.pop();
+        if (player.clientId != clientId)
+        {
+            tempQueue.push(player);
+        }
+    }
+    waitingPlayers = tempQueue;
 }
 
 std::vector<uint8_t> Matchmaker::createMatchNotificationPacket(const PlayerInfo &player, const PlayerInfo &opponent)
 {
-    // Create a ConnectResponse structure to notify the player about the match
+    // Create response structure
     ConnectResponse response;
     response.success = true;
-    strncpy(response.opponentName, opponent.username.c_str(), sizeof(response.opponentName));
-    strncpy(response.hostAddress, opponent.address.c_str(), sizeof(response.hostAddress));
+    strncpy(response.opponentName, opponent.username.c_str(), sizeof(response.opponentName) - 1);
+    response.opponentName[sizeof(response.opponentName) - 1] = '\0';
+
+    strncpy(response.hostAddress, opponent.address.c_str(), sizeof(response.hostAddress) - 1);
+    response.hostAddress[sizeof(response.hostAddress) - 1] = '\0';
+
     response.hostUdpPort = opponent.udpPort;
     response.hostTcpPort = opponent.tcpPort;
-    response.isPlayer1 = (player.username < opponent.username); // Arbitrary decision for player order
 
-    // Serialize the response into a packet
+    // Arbitrary player order determination
+    response.isPlayer1 = (player.username < opponent.username);
+
+    // Create packet
     return createPacket(MessageType::CONNECT_RESPONSE, 0, &response, sizeof(response));
-}
-
-void Matchmaker::sendPacketToPlayer(const PlayerInfo &player, const std::vector<uint8_t> &packet)
-{
-    // Create a UDP socket
-    int udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udpSocket == -1)
-    {
-        perror("socket");
-        return;
-    }
-
-    // Set up the address structure
-    sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(player.udpPort);
-    inet_pton(AF_INET, player.address.c_str(), &addr.sin_addr);
-
-    // Send the packet to the player
-    sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
-
-    // Close the socket
-    close(udpSocket);
 }
 
 } // namespace pong

@@ -1,0 +1,495 @@
+==25135== Memcheck, a memory error detector
+==25135== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==25135== Using Valgrind-3.22.0-bd4db67b1d-20231031 and LibVEX; rerun with -h for copyright info
+==25135== Command: ./pong_server
+==25135== Parent PID: 4024
+==25135== 
+--25135-- 
+--25135-- Valgrind options:
+--25135--    --leak-check=full
+--25135--    --show-leak-kinds=all
+--25135--    --track-origins=yes
+--25135--    --verbose
+--25135--    --log-file=valgrind-out.txt
+--25135-- Contents of /proc/version:
+--25135--   Linux version 6.8.0-57-generic (buildd@lcy02-amd64-040) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #59-Ubuntu SMP PREEMPT_DYNAMIC Sat Mar 15 17:40:59 UTC 2025
+--25135-- 
+--25135-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand-rdseed
+--25135-- Page sizes: currently 4096, max supported 4096
+--25135-- Valgrind library directory: /usr/libexec/valgrind
+--25135-- Reading syms from /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server
+--25135-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+--25135--   Considering /usr/lib/debug/.build-id/1c/8db5f83bba514f8fd5f1fb6d7be975be1bb855.debug ..
+--25135--   .. build-id is valid
+--25135-- Reading syms from /usr/libexec/valgrind/memcheck-amd64-linux
+--25135--    object doesn't have a dynamic symbol table
+--25135-- Scheduler: using generic scheduler lock implementation.
+--25135-- Reading suppressions file: /usr/libexec/valgrind/default.supp
+==25135== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-25135-by-krino45-on-???
+==25135== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-25135-by-krino45-on-???
+==25135== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-25135-by-krino45-on-???
+==25135== 
+==25135== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==25135== don't want to do, unless you know exactly what you're doing,
+==25135== or are doing some strange experiment):
+==25135==   /usr/bin/vgdb --pid=25135 ...command...
+==25135== 
+==25135== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==25135==   /path/to/gdb ./pong_server
+==25135== and then give GDB the following command
+==25135==   target remote | /usr/bin/vgdb --pid=25135
+==25135== --pid is optional if only one valgrind process is running
+==25135== 
+--25135-- REDIR: 0x4028b00 (ld-linux-x86-64.so.2:strlen) redirected to 0x580c2e1a (???)
+--25135-- REDIR: 0x40272b0 (ld-linux-x86-64.so.2:index) redirected to 0x580c2e34 (???)
+--25135-- Reading syms from /usr/libexec/valgrind/vgpreload_core-amd64-linux.so
+--25135-- Reading syms from /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so
+==25135== WARNING: new redirection conflicts with existing -- ignoring it
+--25135--     old: 0x04028b00 (strlen              ) R-> (0000.0) 0x580c2e1a ???
+--25135--     new: 0x04028b00 (strlen              ) R-> (2007.0) 0x0484f340 strlen
+--25135-- REDIR: 0x40274e0 (ld-linux-x86-64.so.2:strcmp) redirected to 0x4850460 (strcmp)
+--25135-- REDIR: 0x4026910 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4853cd0 (mempcpy)
+--25135-- Reading syms from /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33
+--25135-- Reading syms from /usr/lib/x86_64-linux-gnu/libm.so.6
+--25135-- Reading syms from /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+--25135-- Reading syms from /usr/lib/x86_64-linux-gnu/libc.so.6
+--25135--   Considering /usr/lib/debug/.build-id/42/c84c92e6f98126b3e2230ebfdead22c235b667.debug ..
+--25135--   .. build-id is valid
+--25135-- REDIR: 0x4028ca0 (ld-linux-x86-64.so.2:strncmp) redirected to 0x484fc90 (strncmp)
+--25135-- REDIR: 0x4cbb050 (libc.so.6:strnlen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbb0e0 (libc.so.6:strpbrk) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb91a0 (libc.so.6:strcmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cd23b0 (libc.so.6:wcsnlen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb8290 (libc.so.6:memset) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cd1b20 (libc.so.6:wcslen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4d3d3c0 (libc.so.6:__memcpy_chk) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb8200 (libc.so.6:memrchr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cd2350 (libc.so.6:wcsncpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb7720 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cd08e0 (libc.so.6:wcschr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb9090 (libc.so.6:index) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbb110 (libc.so.6:rindex) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cd0990 (libc.so.6:wcscmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb84b0 (libc.so.6:stpncpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cdeeb0 (libc.so.6:wmemchr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbaef0 (libc.so.6:strncmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb8510 (libc.so.6:strcasecmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cba310 (libc.so.6:strcspn) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cd18f0 (libc.so.6:wcscpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb9020 (libc.so.6:strcat) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbadf0 (libc.so.6:strncasecmp_l) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb9110 (libc.so.6:strchrnul) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb7630 (libc.so.6:bcmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cba2a0 (libc.so.6:strcpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb85b0 (libc.so.6:strcasecmp_l) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbacc0 (libc.so.6:strlen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbaf90 (libc.so.6:strncpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cdef30 (libc.so.6:wmemcmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4d3d4e0 (libc.so.6:__memmove_chk) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+==25135== WARNING: new redirection conflicts with existing -- ignoring it
+--25135--     old: 0x04d8e9d0 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853dd0 __memcpy_chk
+--25135--     new: 0x04d8e9d0 (__memcpy_chk_avx_una) R-> (2024.0) 0x04853740 __memmove_chk
+--25135-- REDIR: 0x4cb8440 (libc.so.6:stpcpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb7fc0 (libc.so.6:memmove) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+==25135== Preferring higher priority redirection:
+--25135--     old: 0x04d8ea00 (__memcpy_avx_unalign) R-> (2018.0) 0x04851580 __memcpy_avx_unaligned_erms
+--25135--     new: 0x04d8ea00 (__memcpy_avx_unalign) R-> (2018.1) 0x04852d60 memmove
+--25135-- REDIR: 0x4cb75b0 (libc.so.6:memchr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbb2e0 (libc.so.6:strspn) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cb80e0 (libc.so.6:mempcpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4cbad50 (libc.so.6:strncasecmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--25135-- REDIR: 0x4d935f0 (libc.so.6:__strrchr_avx2) redirected to 0x484ed20 (rindex)
+--25135-- REDIR: 0x4d91740 (libc.so.6:__strlen_avx2) redirected to 0x484f220 (strlen)
+--25135-- REDIR: 0x4d8e2a0 (libc.so.6:__memcmp_avx2_movbe) redirected to 0x4852480 (bcmp)
+--25135-- REDIR: 0x4d92820 (libc.so.6:__strncmp_avx2) redirected to 0x484fab0 (strncmp)
+--25135-- REDIR: 0x4cb3650 (libc.so.6:malloc) redirected to 0x48467b0 (malloc)
+--25135-- REDIR: 0x492c8e0 (libstdc++.so.6:operator new(unsigned long)) redirected to 0x4846f30 (operator new(unsigned long))
+--25135-- REDIR: 0x4cb47a0 (libc.so.6:calloc) redirected to 0x484d8a0 (calloc)
+--25135-- REDIR: 0x4d8e9c0 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x48538d0 (mempcpy)
+--25135-- REDIR: 0x4d90da0 (libc.so.6:__strchrnul_avx2) redirected to 0x48537b0 (strchrnul)
+--25135-- REDIR: 0x4d8ea00 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x4852d60 (memmove)
+--25135-- REDIR: 0x4d8f400 (libc.so.6:__memset_avx2_unaligned_erms) redirected to 0x4852c50 (memset)
+==25135== Thread 2:
+==25135== Syscall param socketcall.sendto(msg) points to uninitialised byte(s)
+==25135==    at 0x4D320F4: sendto (sendto.c:27)
+==25135==    by 0x11808E: pong::NetworkManager::sendToClient(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned short, std::vector<unsigned char, std::allocator<unsigned char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1174B9: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4F8: void std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4AD: std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::operator()() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D48D: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> > >::_M_run() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x495DDB3: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33)
+==25135==    by 0x4CA2AA3: start_thread (pthread_create.c:447)
+==25135==  Address 0x4e30691 is 1 bytes inside a block of size 68 alloc'd
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C438: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AD5E: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AA5A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1199C6: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11916E: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11F2E2: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11748E: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x11F28E: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+--25135-- REDIR: 0x492a8b0 (libstdc++.so.6:operator delete(void*, unsigned long)) redirected to 0x484a530 (operator delete(void*, unsigned long))
+--25135-- REDIR: 0x4d92e80 (libc.so.6:__strncpy_avx2) redirected to 0x484f4f0 (strncpy)
+==25135== Thread 1:
+==25135== Syscall param socketcall.sendto(msg) points to uninitialised byte(s)
+==25135==    at 0x4D320F4: sendto (sendto.c:27)
+==25135==    by 0x11808E: pong::NetworkManager::sendToClient(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned short, std::vector<unsigned char, std::allocator<unsigned char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D157: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Address 0x4e30b51 is 1 bytes inside a block of size 68 alloc'd
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C438: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AD5E: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AA5A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1199C6: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11916E: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11F2E2: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D787: pong::Matchmaker::createMatchNotificationPacket(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D12D: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x11F28E: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== Syscall param socketcall.sendto(msg) points to uninitialised byte(s)
+==25135==    at 0x4D320F4: sendto (sendto.c:27)
+==25135==    by 0x11808E: pong::NetworkManager::sendToClient(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned short, std::vector<unsigned char, std::allocator<unsigned char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D199: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Address 0x4e30be1 is 1 bytes inside a block of size 68 alloc'd
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C438: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AD5E: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AA5A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1199C6: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11916E: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11F2E2: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D787: pong::Matchmaker::createMatchNotificationPacket(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D16F: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x11F28E: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== Conditional jump or move depends on uninitialised value(s)
+==25135==    at 0x11E258: GameState::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D6D5: pong::ServerGame::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117B7C: pong::NetworkManager::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD2F: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x10BBD6: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== valgrind: Unrecognised instruction at address 0x11e523.
+==25135==    at 0x11E523: GameState::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D6D5: pong::ServerGame::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117B7C: pong::NetworkManager::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD2F: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== Your program just tried to execute an instruction that Valgrind
+==25135== did not recognise.  There are two possible reasons for this.
+==25135== 1. Your program has a bug and erroneously jumped to a non-code
+==25135==    location.  If you are running Memcheck and you just saw a
+==25135==    warning about a bad jump, it's probably your program's fault.
+==25135== 2. The instruction is legitimate but Valgrind doesn't handle it,
+==25135==    i.e. it's Valgrind's fault.  If you think this is the case or
+==25135==    you are not sure, please let us know and we'll try to fix it.
+==25135== Either way, Valgrind will now raise a SIGILL signal which will
+==25135== probably kill your program.
+==25135== 
+==25135== Process terminating with default action of signal 4 (SIGILL)
+==25135==  Illegal opcode at address 0x11E523
+==25135==    at 0x11E523: GameState::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D6D5: pong::ServerGame::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117B7C: pong::NetworkManager::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD2F: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== HEAP SUMMARY:
+==25135==     in use at exit: 78,808 bytes in 17 blocks
+==25135==   total heap usage: 24 allocs, 7 frees, 79,264 bytes allocated
+==25135== 
+==25135== Searching for pointers to 17 not-freed blocks
+==25135== Checked 8,543,520 bytes
+==25135== 
+==25135== 32 bytes in 1 blocks are still reachable in loss record 1 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11901B: std::thread::thread<void (pong::NetworkManager::*)(), pong::NetworkManager*, void>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116A97: pong::NetworkManager::startServer(unsigned short) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BCD1: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 64 bytes in 1 blocks are still reachable in loss record 2 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x114861: std::__new_allocator<pong::PlayerInfo*>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x111AA2: std::_Deque_base<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::_M_allocate_map(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10FC15: std::_Deque_base<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::_M_initialize_map(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10EA4B: std::_Deque_base<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::_Deque_base() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10DFBD: std::deque<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::deque() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10DFF8: std::queue<pong::PlayerInfo, std::deque<pong::PlayerInfo, std::allocator<pong::PlayerInfo> > >::queue<std::deque<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >, void>() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10C9D7: pong::Matchmaker::Matchmaker() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BC22: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 104 bytes in 1 blocks are still reachable in loss record 3 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x116109: std::__new_allocator<std::__detail::_Hash_node_base*>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1152FB: std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> > >::_M_allocate_buckets(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x114ADA: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_allocate_buckets(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x113874: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_rehash_aux(unsigned long, std::integral_constant<bool, true>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x112385: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_rehash(unsigned long, unsigned long const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11045D: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_insert_unique_node(unsigned long, unsigned long, std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true>*, unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10EF02: std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10E29A: std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, pong::PlayerInfo, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> > >::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CCE0: pong::Matchmaker::registerPlayer(pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117231: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 104 bytes in 1 blocks are still reachable in loss record 4 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x116109: std::__new_allocator<std::__detail::_Hash_node_base*>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1152FB: std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> > >::_M_allocate_buckets(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x114ADA: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_allocate_buckets(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x113874: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_rehash_aux(unsigned long, std::integral_constant<bool, true>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x112385: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_rehash(unsigned long, unsigned long const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11045D: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_insert_unique_node(unsigned long, unsigned long, std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true>*, unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10EF02: std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10E29A: std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, pong::PlayerInfo, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> > >::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CD0F: pong::Matchmaker::registerPlayer(pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117231: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 104 bytes in 1 blocks are still reachable in loss record 5 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x116109: std::__new_allocator<std::__detail::_Hash_node_base*>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D001: std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, true> > >::_M_allocate_buckets(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11CD98: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_allocate_buckets(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11C6A8: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_rehash_aux(unsigned long, std::integral_constant<bool, true>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11BE43: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_rehash(unsigned long, unsigned long const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11B3A7: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_insert_unique_node(unsigned long, unsigned long, std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, true>*, unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11A622: std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x119520: std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, unsigned long, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> > >::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11742D: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 112 bytes in 2 blocks are still reachable in loss record 6 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11CD09: std::__new_allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, true> >::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11BBC7: std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, true>* std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, true> > >::_M_allocate_node<std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>, std::tuple<> >(std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>&&, std::tuple<>&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11B2BE: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_Scoped_node::_Scoped_node<std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>, std::tuple<> >(std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, true> > >*, std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>&&, std::tuple<>&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11A604: std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x119520: std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, unsigned long, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> > >::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11742D: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4F8: void std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 160 bytes in 1 blocks are still reachable in loss record 7 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C5E5: std::__new_allocator<pong::ConnectedClient>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11B20E: std::_Vector_base<pong::ConnectedClient, std::allocator<pong::ConnectedClient> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11A1EF: void std::vector<pong::ConnectedClient, std::allocator<pong::ConnectedClient> >::_M_realloc_insert<pong::ConnectedClient const&>(__gnu_cxx::__normal_iterator<pong::ConnectedClient*, std::vector<pong::ConnectedClient, std::allocator<pong::ConnectedClient> > >, pong::ConnectedClient const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1194EA: std::vector<pong::ConnectedClient, std::allocator<pong::ConnectedClient> >::push_back(pong::ConnectedClient const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1173F9: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4F8: void std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4AD: std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::operator()() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 304 bytes in 2 blocks are still reachable in loss record 8 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x114A1B: std::__new_allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> >::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x112109: std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true>* std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> > >::_M_allocate_node<std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>, std::tuple<> >(std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>&&, std::tuple<>&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x110374: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_Scoped_node::_Scoped_node<std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>, std::tuple<> >(std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> > >*, std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>&&, std::tuple<>&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10EEE4: std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10E29A: std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, pong::PlayerInfo, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> > >::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CCE0: pong::Matchmaker::registerPlayer(pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117231: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 304 bytes in 2 blocks are still reachable in loss record 9 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x114A1B: std::__new_allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> >::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x112109: std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true>* std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> > >::_M_allocate_node<std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>, std::tuple<> >(std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>&&, std::tuple<>&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x110374: std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_Scoped_node::_Scoped_node<std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>, std::tuple<> >(std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, true> > >*, std::piecewise_construct_t const&, std::tuple<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&>&&, std::tuple<>&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10EEE4: std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10E29A: std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, pong::PlayerInfo, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, pong::PlayerInfo> > >::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CD0F: pong::Matchmaker::registerPlayer(pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117231: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 304 bytes in 1 blocks are possibly lost in loss record 10 of 14
+==25135==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x40145AB: calloc (rtld-malloc.h:44)
+==25135==    by 0x40145AB: allocate_dtv (dl-tls.c:370)
+==25135==    by 0x40145AB: _dl_allocate_tls (dl-tls.c:629)
+==25135==    by 0x4CA3616: allocate_stack (allocatestack.c:429)
+==25135==    by 0x4CA3616: pthread_create@@GLIBC_2.34 (pthread_create.c:655)
+==25135==    by 0x495DEB0: std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33)
+==25135==    by 0x11907C: std::thread::thread<void (pong::NetworkManager::*)(), pong::NetworkManager*, void>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116A97: pong::NetworkManager::startServer(unsigned short) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BCD1: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 416 bytes in 1 blocks are still reachable in loss record 11 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x114BF3: std::__new_allocator<pong::PlayerInfo>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1125C1: std::_Deque_base<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::_M_allocate_node() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x111B36: std::_Deque_base<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::_M_create_nodes(pong::PlayerInfo**, pong::PlayerInfo**) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10FC6B: std::_Deque_base<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::_M_initialize_map(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10EA4B: std::_Deque_base<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::_Deque_base() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10DFBD: std::deque<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >::deque() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10DFF8: std::queue<pong::PlayerInfo, std::deque<pong::PlayerInfo, std::allocator<pong::PlayerInfo> > >::queue<std::deque<pong::PlayerInfo, std::allocator<pong::PlayerInfo> >, void>() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10C9D7: pong::Matchmaker::Matchmaker() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BC22: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 1,024 bytes in 1 blocks are still reachable in loss record 12 of 14
+==25135==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x4C8B1B4: _IO_file_doallocate (filedoalloc.c:101)
+==25135==    by 0x4C9B523: _IO_doallocbuf (genops.c:347)
+==25135==    by 0x4C98F8F: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:745)
+==25135==    by 0x4C99AAE: _IO_new_file_xsputn (fileops.c:1244)
+==25135==    by 0x4C99AAE: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1197)
+==25135==    by 0x4C8CA11: fwrite (iofwrite.c:39)
+==25135==    by 0x49C7DC3: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33)
+==25135==    by 0x49C813B: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33)
+==25135==    by 0x116AD3: pong::NetworkManager::startServer(unsigned short) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BCD1: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 2,048 bytes in 1 blocks are still reachable in loss record 13 of 14
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C438: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AD5E: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AA5A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1199C6: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11916E: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116BE3: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4F8: void std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4AD: std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::operator()() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D48D: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> > >::_M_run() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 73,728 bytes in 1 blocks are still reachable in loss record 14 of 14
+==25135==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x492838E: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33)
+==25135==    by 0x400571E: call_init.part.0 (dl-init.c:74)
+==25135==    by 0x4005823: call_init (dl-init.c:120)
+==25135==    by 0x4005823: _dl_init (dl-init.c:121)
+==25135==    by 0x401F59F: ??? (in /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2)
+==25135== 
+==25135== LEAK SUMMARY:
+==25135==    definitely lost: 0 bytes in 0 blocks
+==25135==    indirectly lost: 0 bytes in 0 blocks
+==25135==      possibly lost: 304 bytes in 1 blocks
+==25135==    still reachable: 78,504 bytes in 16 blocks
+==25135==         suppressed: 0 bytes in 0 blocks
+==25135== 
+==25135== ERROR SUMMARY: 6 errors from 5 contexts (suppressed: 0 from 0)
+==25135== 
+==25135== 1 errors in context 1 of 5:
+==25135== Conditional jump or move depends on uninitialised value(s)
+==25135==    at 0x11E258: GameState::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D6D5: pong::ServerGame::update() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x117B7C: pong::NetworkManager::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD2F: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x10BBD6: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 
+==25135== 1 errors in context 2 of 5:
+==25135== Syscall param socketcall.sendto(msg) points to uninitialised byte(s)
+==25135==    at 0x4D320F4: sendto (sendto.c:27)
+==25135==    by 0x11808E: pong::NetworkManager::sendToClient(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned short, std::vector<unsigned char, std::allocator<unsigned char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D199: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Address 0x4e30be1 is 1 bytes inside a block of size 68 alloc'd
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C438: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AD5E: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AA5A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1199C6: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11916E: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11F2E2: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D787: pong::Matchmaker::createMatchNotificationPacket(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D16F: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x11F28E: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 
+==25135== 1 errors in context 3 of 5:
+==25135== Syscall param socketcall.sendto(msg) points to uninitialised byte(s)
+==25135==    at 0x4D320F4: sendto (sendto.c:27)
+==25135==    by 0x11808E: pong::NetworkManager::sendToClient(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned short, std::vector<unsigned char, std::allocator<unsigned char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D157: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Address 0x4e30b51 is 1 bytes inside a block of size 68 alloc'd
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C438: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AD5E: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AA5A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1199C6: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11916E: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11F2E2: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D787: pong::Matchmaker::createMatchNotificationPacket(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10D12D: pong::Matchmaker::notifyPlayersAboutMatch(pong::PlayerInfo const&, pong::PlayerInfo const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10CEFA: pong::Matchmaker::process() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x10BD20: main (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x11F28E: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== 
+==25135== 2 errors in context 4 of 5:
+==25135== Thread 2:
+==25135== Syscall param socketcall.sendto(msg) points to uninitialised byte(s)
+==25135==    at 0x4D320F4: sendto (sendto.c:27)
+==25135==    by 0x11808E: pong::NetworkManager::sendToClient(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned short, std::vector<unsigned char, std::allocator<unsigned char> > const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1174B9: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4F8: void std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D4AD: std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> >::operator()() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D48D: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (pong::NetworkManager::*)(), pong::NetworkManager*> > >::_M_run() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x495DDB3: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33)
+==25135==    by 0x4CA2AA3: start_thread (pthread_create.c:447)
+==25135==  Address 0x4e30691 is 1 bytes inside a block of size 68 alloc'd
+==25135==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==25135==    by 0x11C438: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AD5E: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11AA5A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x1199C6: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11916E: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11F2E2: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11748E: pong::NetworkManager::handleConnectRequest(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116EF5: pong::NetworkManager::handlePacket(std::vector<unsigned char, std::allocator<unsigned char> > const&, sockaddr_in const&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x116CF6: pong::NetworkManager::receiveLoop() (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D645: void std::__invoke_impl<void, void (pong::NetworkManager::*)(), pong::NetworkManager*>(std::__invoke_memfun_deref, void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==    by 0x11D598: std::__invoke_result<void (pong::NetworkManager::*)(), pong::NetworkManager*>::type std::__invoke<void (pong::NetworkManager::*)(), pong::NetworkManager*>(void (pong::NetworkManager::*&&)(), pong::NetworkManager*&&) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135==  Uninitialised value was created by a stack allocation
+==25135==    at 0x11F28E: pong::createPacket(pong::MessageType, unsigned int, void const*, unsigned int) (in /home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/pong_server)
+==25135== 
+==25135== ERROR SUMMARY: 6 errors from 5 contexts (suppressed: 0 from 0)
