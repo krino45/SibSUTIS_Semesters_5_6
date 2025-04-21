@@ -1,0 +1,13 @@
+#include "../lib/main.h"
+
+void handler(int s)
+{
+    cout << "woo app 5\n";
+}
+
+int main() {
+  signal (SIGUSR1, handler);
+    cout << "App 5" << endl;
+    pause ();
+    return 0;
+}
