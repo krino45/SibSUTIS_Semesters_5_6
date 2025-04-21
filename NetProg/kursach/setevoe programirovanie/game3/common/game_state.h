@@ -57,6 +57,9 @@ struct Vec2
 
 struct Paddle
 {
+    Paddle() : position{0, 0}, size{1.0f, HEIGHT}, score(0), color(0)
+    {
+    }
     static constexpr float HEIGHT = 8.0f;
     static constexpr float WIDTH = 1.0f;
 
@@ -68,6 +71,10 @@ struct Paddle
 
 struct Ball
 {
+    Ball() : position{0, 0}, last_position{0, 0}, velocity{0, 0}, speed(0.0f)
+    {
+    }
+
     static constexpr float RADIUS = 1.0f;
 
     Vec2 position;
@@ -78,10 +85,19 @@ struct Ball
 
 struct GameState
 {
-    static constexpr float WIDTH = 80.0f;
-    static constexpr float HEIGHT = 20.0f;
-    static constexpr int VICTORY_CONDITION = 10;
-    static constexpr float PADDLE_SPEED = 1.5f;
+    GameState() : lastScoringPlayerIsPlayer1(false), frame(0)
+    {
+        memset(this, 0, sizeof(GameState));
+
+        player1.size = {1.0f, Paddle::HEIGHT};
+        player2.size = {1.0f, Paddle::HEIGHT};
+        reset(true);
+    }
+
+    static constexpr int WIDTH = 80;
+    static constexpr int HEIGHT = 20;
+    static constexpr int VICTORY_CONDITION = 8;
+    static constexpr float PADDLE_SPEED = 1.75f;
     static constexpr float BALL_BASE_SPEED = 0.2f;
     static constexpr float BALL_SPEED_INCREASE = 0.05f;
 
@@ -93,14 +109,19 @@ struct GameState
 
     void reset(bool serve_left)
     {
+        player1.score = 0;
+        player2.score = 0;
+
+        player1.position = {2.0f, HEIGHT / 2 - player1.size.y / 2};
+        player2.position = {WIDTH - 2 - player2.size.x, HEIGHT / 2 - player2.size.y / 2};
+
         ball.position = {WIDTH / 2.0f, HEIGHT / 2.0f};
         ball.speed = BALL_BASE_SPEED;
         float angle = ((std::rand() % 100) / 100.0f - 0.5f) * (3.14159f / 2);
         ball.velocity.x = ((serve_left) ? -1.0f : 1.0f) * BALL_BASE_SPEED * std::cos(angle);
         ball.velocity.y = BALL_BASE_SPEED * std::sin(angle);
-
-        player1.position = {2.0f, HEIGHT / 2 - player1.size.y / 2};
-        player2.position = {WIDTH - 2 - player2.size.x, HEIGHT / 2 - player2.size.y / 2};
+        lastScoringPlayerIsPlayer1 = serve_left;
+        frame = 0;
     }
     bool update()
     {
@@ -165,7 +186,7 @@ struct GameState
         }
 
         // Check for scoring
-        if (ball.position.x <= 0)
+        if (ball.position.x <= 0 && ball.velocity.x < 0)
         {
             player2.score++;
             lastScoringPlayerIsPlayer1 = false;
@@ -173,8 +194,7 @@ struct GameState
             reset(true);
             return true;
         }
-
-        if (ball.position.x >= WIDTH - 1)
+        else if (ball.position.x >= WIDTH - 1 && ball.velocity.x > 0)
         {
             player1.score++;
             lastScoringPlayerIsPlayer1 = true;

@@ -23,6 +23,14 @@ class Game
     ~Game();
 
     void setGameMode(GameMode mode);
+    InputHandler &getInputHandler()
+    {
+        return inputHandler;
+    };
+    Renderer &getRenderer()
+    {
+        return renderer;
+    };
     void setIsPlayer1(bool isP1);
     void start();
     void update();
@@ -30,6 +38,11 @@ class Game
     void setOpponentInfo(const ConnectResponse &response);
     bool ready;
     bool running;
+    void toggleChat();
+    void addChatMessage(const ChatMessageData message);
+    const std::vector<ChatMessageData> &getChatMessages() const;
+    // ours
+    int udpPort, tcpPort;
 
   private:
     void handleInput();
@@ -38,6 +51,9 @@ class Game
     void updatePlayer2Paddle(uint8_t input);
     void updateAI();
 
+    std::vector<ChatMessageData> chatMessages;
+    bool chatActive = false;
+    std::string currentChatInput;
     InputHandler &inputHandler;
     Renderer &renderer;
     NetworkManager &networkManager;

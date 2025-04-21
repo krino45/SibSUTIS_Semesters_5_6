@@ -18,6 +18,7 @@ CMakeFiles/pong_client.dir/client/game.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/asm-generic/socket.h \
   /usr/include/asm-generic/sockios.h \
   /usr/include/c++/13/array \
+  /usr/include/c++/13/atomic \
   /usr/include/c++/13/backward/auto_ptr.h \
   /usr/include/c++/13/backward/binders.h \
   /usr/include/c++/13/bit \
@@ -671,6 +672,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/asm-generic/socket.h \
   /usr/include/asm-generic/sockios.h \
   /usr/include/c++/13/array \
+  /usr/include/c++/13/atomic \
   /usr/include/c++/13/backward/auto_ptr.h \
   /usr/include/c++/13/backward/binders.h \
   /usr/include/c++/13/bit \
@@ -853,6 +855,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/netinet/in.h \
   /usr/include/pthread.h \
   /usr/include/sched.h \
+  /usr/include/signal.h \
   /usr/include/stdc-predef.h \
   /usr/include/stdint.h \
   /usr/include/stdio.h \
@@ -904,9 +907,22 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/sched.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
   /usr/include/x86_64-linux-gnu/bits/setjmp.h \
+  /usr/include/x86_64-linux-gnu/bits/sigaction.h \
+  /usr/include/x86_64-linux-gnu/bits/sigcontext.h \
+  /usr/include/x86_64-linux-gnu/bits/sigevent-consts.h \
+  /usr/include/x86_64-linux-gnu/bits/siginfo-arch.h \
+  /usr/include/x86_64-linux-gnu/bits/siginfo-consts-arch.h \
+  /usr/include/x86_64-linux-gnu/bits/siginfo-consts.h \
+  /usr/include/x86_64-linux-gnu/bits/signal_ext.h \
+  /usr/include/x86_64-linux-gnu/bits/signum-arch.h \
+  /usr/include/x86_64-linux-gnu/bits/signum-generic.h \
+  /usr/include/x86_64-linux-gnu/bits/sigstack.h \
+  /usr/include/x86_64-linux-gnu/bits/sigstksz.h \
+  /usr/include/x86_64-linux-gnu/bits/sigthread.h \
   /usr/include/x86_64-linux-gnu/bits/sockaddr.h \
   /usr/include/x86_64-linux-gnu/bits/socket.h \
   /usr/include/x86_64-linux-gnu/bits/socket_type.h \
+  /usr/include/x86_64-linux-gnu/bits/ss_flags.h \
   /usr/include/x86_64-linux-gnu/bits/stat.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
@@ -939,19 +955,26 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/__sigval_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/error_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/sig_atomic_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/sigevent_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/sigval_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/stack_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
@@ -987,6 +1010,7 @@ CMakeFiles/pong_client.dir/client/main.cpp.o: /home/krino45/Desktop/sem6/NetProg
   /usr/include/x86_64-linux-gnu/sys/socket.h \
   /usr/include/x86_64-linux-gnu/sys/ttydefaults.h \
   /usr/include/x86_64-linux-gnu/sys/types.h \
+  /usr/include/x86_64-linux-gnu/sys/ucontext.h \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
@@ -1004,12 +1028,15 @@ CMakeFiles/pong_client.dir/client/network.cpp.o: /home/krino45/Desktop/sem6/NetP
   /usr/include/asm-generic/socket.h \
   /usr/include/asm-generic/sockios.h \
   /usr/include/c++/13/array \
+  /usr/include/c++/13/atomic \
   /usr/include/c++/13/backward/binders.h \
   /usr/include/c++/13/bit \
   /usr/include/c++/13/bits/algorithmfwd.h \
   /usr/include/c++/13/bits/alloc_traits.h \
   /usr/include/c++/13/bits/allocated_ptr.h \
   /usr/include/c++/13/bits/allocator.h \
+  /usr/include/c++/13/bits/atomic_base.h \
+  /usr/include/c++/13/bits/atomic_lockfree_defines.h \
   /usr/include/c++/13/bits/basic_ios.h \
   /usr/include/c++/13/bits/basic_ios.tcc \
   /usr/include/c++/13/bits/basic_string.h \
@@ -1859,6 +1886,32 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/network.cpp:
 
+/usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/__sigval_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/ss_flags.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/sigval_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/sigthread.h:
+
+/usr/include/x86_64-linux-gnu/bits/signum-generic.h:
+
+/usr/include/x86_64-linux-gnu/bits/signal_ext.h:
+
+/usr/include/x86_64-linux-gnu/bits/siginfo-consts.h:
+
+/usr/include/x86_64-linux-gnu/bits/siginfo-arch.h:
+
+/usr/include/x86_64-linux-gnu/bits/sigevent-consts.h:
+
+/usr/include/x86_64-linux-gnu/bits/sigcontext.h:
+
+/usr/include/x86_64-linux-gnu/bits/sigaction.h:
+
+/usr/include/signal.h:
+
 /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/main.cpp:
 
 /usr/include/c++/13/cstring:
@@ -1977,6 +2030,8 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /usr/include/c++/13/bits/stl_construct.h:
 
+/usr/include/x86_64-linux-gnu/bits/sigstack.h:
+
 /usr/include/c++/13/bits/stl_bvector.h:
 
 /usr/include/c++/13/thread:
@@ -2018,6 +2073,14 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 /usr/include/c++/13/bits/shared_ptr_atomic.h:
 
 /usr/include/c++/13/bits/concept_check.h:
+
+/usr/include/c++/13/exception:
+
+/usr/include/x86_64-linux-gnu/asm/bitsperlong.h:
+
+/usr/include/c++/13/ext/type_traits.h:
+
+/usr/include/c++/13/debug/assertions.h:
 
 /usr/include/c++/13/bits/basic_ios.tcc:
 
@@ -2067,9 +2130,17 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /usr/include/c++/13/condition_variable:
 
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.h:
+/usr/include/c++/13/atomic:
 
-/usr/include/c++/13/debug/assertions.h:
+CMakeFiles/pong_client.dir/client/render.cpp.o:
+
+/usr/include/c++/13/tr1/bessel_function.tcc:
+
+/usr/include/c++/13/bits/stl_algo.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/network.h:
 
 /usr/include/c++/13/bits/stl_iterator_base_funcs.h:
 
@@ -2093,6 +2164,8 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/c++/13/cctype:
 
+/usr/include/x86_64-linux-gnu/bits/signum-arch.h:
+
 /usr/include/c++/13/bits/quoted_string.h:
 
 /usr/include/c++/13/bits/uses_allocator.h:
@@ -2111,17 +2184,17 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/c++/13/functional:
 
-/usr/include/c++/13/exception:
-
-/usr/include/x86_64-linux-gnu/asm/bitsperlong.h:
-
-/usr/include/c++/13/ext/type_traits.h:
-
 /usr/include/asm-generic/posix_types.h:
 
 /usr/include/c++/13/compare:
 
 /usr/include/x86_64-linux-gnu/bits/setjmp.h:
+
+/usr/include/c++/13/system_error:
+
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/utils.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
 
 /usr/include/c++/13/bits/parse_numbers.h:
 
@@ -2159,6 +2232,8 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/c++/13/bits/atomic_base.h:
 
+/usr/include/x86_64-linux-gnu/bits/types/sigevent_t.h:
+
 /usr/include/stdc-predef.h:
 
 /usr/include/x86_64-linux-gnu/bits/time64.h:
@@ -2169,16 +2244,6 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/c++/13/bits/functexcept.h:
 
-/usr/include/c++/13/system_error:
-
-/home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/common/utils.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
-
-/usr/include/c++/13/bits/stl_algo.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
-
 /usr/include/c++/13/bits/cxxabi_forced.h:
 
 /usr/include/c++/13/bits/locale_classes.h:
@@ -2186,10 +2251,6 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 /usr/include/c++/13/bits/exception_ptr.h:
 
 /usr/include/x86_64-linux-gnu/bits/wordsize.h:
-
-CMakeFiles/pong_client.dir/client/render.cpp.o:
-
-/usr/include/c++/13/tr1/bessel_function.tcc:
 
 /usr/include/stdio.h:
 
@@ -2209,6 +2270,10 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 
 /usr/include/stdlib.h:
 
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h:
+
+/usr/include/c++/13/bits/requires_hosted.h:
+
 /usr/include/c++/13/bits/stl_iterator_base_types.h:
 
 /usr/include/c++/13/bits/stl_iterator.h:
@@ -2220,6 +2285,8 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 /usr/include/c++/13/cstdio:
 
 /usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h:
+
+/usr/include/x86_64-linux-gnu/bits/siginfo-consts-arch.h:
 
 /usr/include/x86_64-linux-gnu/bits/select.h:
 
@@ -2315,6 +2382,10 @@ CMakeFiles/pong_client.dir/client/render.cpp.o:
 
 /usr/include/features-time64.h:
 
+/usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/sig_atomic_t.h:
+
 /usr/include/features.h:
 
 /usr/include/x86_64-linux-gnu/bits/struct_mutex.h:
@@ -2342,6 +2413,8 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 /usr/include/c++/13/bit:
 
 /usr/include/time.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/stack_t.h:
 
 /usr/include/c++/13/ext/aligned_buffer.h:
 
@@ -2382,6 +2455,8 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h:
 
 /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h:
+
+/usr/include/x86_64-linux-gnu/sys/ucontext.h:
 
 /usr/include/x86_64-linux-gnu/bits/fcntl.h:
 
@@ -2483,6 +2558,8 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 
 /lib/x86_64-linux-gnu/libm.so.6:
 
+/usr/include/x86_64-linux-gnu/bits/sigstksz.h:
+
 /usr/include/x86_64-linux-gnu/bits/time.h:
 
 /usr/include/c++/13/chrono:
@@ -2560,7 +2637,3 @@ CMakeFiles/pong_client.dir/common/network.cpp.o:
 /usr/include/x86_64-linux-gnu/sys/ttydefaults.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
-
-/usr/include/c++/13/bits/requires_hosted.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h:

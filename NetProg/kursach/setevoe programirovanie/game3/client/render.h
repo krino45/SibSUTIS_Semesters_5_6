@@ -5,6 +5,7 @@
 #include "../common/network.h"
 #include <deque>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,7 @@ class Renderer
   private:
     // Previous state for interpolation
     GameState prevState;
+    std::recursive_mutex renderMutex;
 
     // Last rendered ball position for erasing
     int lastBallX, lastBallY;
@@ -58,6 +60,8 @@ class Renderer
 
     // Interpolate between two states for smooth rendering
     GameState interpolateStates(const GameState &prev, const GameState &current, float alpha);
+
+    bool debug = false;
 };
 
 } // namespace pong

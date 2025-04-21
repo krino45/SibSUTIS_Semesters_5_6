@@ -19,6 +19,8 @@ class InputHandler
     InputHandler();
     ~InputHandler();
 
+    void prepareForMenuInput();
+
     // Initialize terminal for raw input
     bool initialize();
 

@@ -35,13 +35,17 @@ bool Renderer::initialize()
 
 void Renderer::clearScreen()
 {
+    if (debug)
+        return;
     terminal::clearScreen();
 }
 
 void Renderer::drawArena()
 {
+    if (debug)
+        return;
     // Set background color (dark gray)
-    std::cout << "\033[48;5;234m";
+    std::cout << "\033[48;5;234m" << std::flush;
 
     // Clear the entire play area first
     for (int y = 1; y <= height; y++)
@@ -54,7 +58,7 @@ void Renderer::drawArena()
     }
 
     // Draw borders (white)
-    std::cout << "\033[38;5;255m";
+    std::cout << "\033[38;5;255m" << std::flush;
 
     // Top and bottom borders
     for (int x = 0; x < width; x++)
@@ -73,7 +77,6 @@ void Renderer::drawArena()
         terminal::setCursor(width, y);
         std::cout << "║";
 
-        // Dotted center line (dark gray)
         terminal::setCursor(width / 2 + 1, y);
         std::cout << (y % 2 ? "\033[38;5;239m│" : " ");
     }
@@ -90,10 +93,19 @@ void Renderer::drawArena()
 
     // Reset colors
     terminal::resetColor();
+    std::cout << std::flush;
+
+    // Redraw persistent UI
+    renderScore(prevState);
+    renderControls();
 }
 
 void Renderer::drawPaddle(const Paddle &paddle, bool erase)
 {
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
     const int paddleX = static_cast<int>(paddle.position.x + 0.5f);
     const int paddleY = static_cast<int>(paddle.position.y + 0.5f);
 
@@ -134,6 +146,10 @@ void Renderer::drawPaddle(const Paddle &paddle, bool erase)
 
 void Renderer::drawBall(const Ball &ball, bool erase)
 {
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
     // Round ball position to integer coordinates
     int ballX = static_cast<int>(ball.position.x + 0.5f);
     int ballY = static_cast<int>(ball.position.y + 0.5f);
@@ -149,17 +165,7 @@ void Renderer::drawBall(const Ball &ball, bool erase)
     if (!erase)
     {
         terminal::setCursor(ballX + 1, ballY + 1);
-
-        // Change appearance based on speed
-        float speed = ball.velocity.magnitude();
-        if (speed > 0.75f)
-        {
-            std::cout << "\033[1;33;48;5;234m●" << std::flush; // Fast - yellow, solid
-        }
-        else
-        {
-            std::cout << "\033[1;93;48;5;234m◦" << std::flush; // Normal - light yellow, hollow
-        }
+        std::cout << "\033[1;93;48;5;234m◦" << std::flush; // Normal - light yellow, hollow
 
         // Remember this position for later erasing
         lastBallX = ballX;
@@ -171,6 +177,11 @@ void Renderer::drawBall(const Ball &ball, bool erase)
 
 void Renderer::drawChatArea()
 {
+    if (debug)
+        return;
+
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
     for (int y = height + 6; y < height + 11; ++y)
     {
         terminal::setCursor(2, y);
@@ -180,96 +191,117 @@ void Renderer::drawChatArea()
 
 void Renderer::renderScore(const GameState &state)
 {
-    terminal::setCursor(width / 2 - 10, height + 2);
-    std::cout << getColoredText("PLAYER 1: " + std::to_string(state.player1.score), 46);
-    terminal::setCursor(width / 2 + 2, height + 2);
-    std::cout << getColoredText("PLAYER 2: " + std::to_string(state.player2.score), 39);
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    prevState.player1.score = state.player1.score;
+    prevState.player2.score = state.player2.score;
+
+    terminal::setCursor(width / 2 - 12, height + 1);
+    std::cout << getColoredText("PLAYER 1: " + std::to_string(state.player1.score), 46) << std::flush;
+    terminal::setCursor(width / 2 + 4, height + 1);
+    std::cout << getColoredText("PLAYER 2: " + std::to_string(state.player2.score), 39) << std::flush;
 }
 
 void Renderer::renderControls()
 {
-    terminal::setCursor(2, height + 4);
-    std::cout << getColoredText("CONTROLS: P1 (W/S)   P2 (↑/↓)   QUIT (Q)", 245);
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    terminal::setCursor(2, height + 2);
+    std::cout << getColoredText("CONTROLS: P1 (W/S)   P2 (↑/↓)   QUIT (Q)", 245) << std::flush;
 }
 
 void Renderer::renderChatInput(const std::string &inputText)
 {
-    terminal::setCursor(2, height + 11);
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    if (!debug)
+        terminal::setCursor(2, height + 11);
     std::cout << "> " << inputText;
 }
 
 void Renderer::initializeChatArea(const std::string &opponentName)
 {
-    terminal::setCursor(2, height + 6);
-    std::cout << getColoredText("--- CHAT WITH " + opponentName + " ---", 245);
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+    if (!debug)
+        terminal::setCursor(2, height + 6);
+    std::cout << getColoredText("--- CHAT WITH " + opponentName + " ---", 245) << std::flush;
 }
 
 void Renderer::renderGoalAnimation()
 {
-    terminal::setCursor(width / 2 - 3, height / 2);
-    std::cout << terminal::colorText("GOAL!", 196, 155);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    initialize();
+    if (debug)
+        return;
+    {
+        std::lock_guard<std::recursive_mutex> lock(renderMutex);
+        terminal::setCursor(width / 2 - 3, height / 2);
+        std::cout << terminal::colorText("GOAL!", 196, 234) << std::flush;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    // drawArena();
 }
 
 void Renderer::showMatchFoundAnimation(const std::string &opponentName)
 {
-    // Clear the middle of the screen
-    for (int y = height / 2 - 3; y <= height / 2 + 3; y++)
+    if (debug)
+        return;
     {
-        terminal::setCursor(width / 4, y);
-        std::cout << std::string(width / 2, ' ');
-    }
+        std::lock_guard<std::recursive_mutex> lock(renderMutex);
+        clearScreen();
 
-    // Animated countdown
-    std::string message = "MATCH FOUND: " + opponentName;
+        // Animated countdown
+        std::string message = "MATCH FOUND: " + opponentName;
 
-    // Flash the message
-    for (int i = 0; i < 3; i++)
-    {
-        // Show message
+        // Flash the message
+        for (int i = 0; i < 3; i++)
+        {
+            // Show message
+            terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+            std::cout << getColoredText(message, 226) << std::flush;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+            // Hide message
+            terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+            std::cout << std::string(message.length(), ' ') << std::flush;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+
+        // Show message one final time
         terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
-        std::cout << getColoredText(message, 226); // Bright yellow
+        std::cout << getColoredText(message, 226) << std::flush;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        // Countdown animation
+        for (int i = 3; i > 0; i--)
+        {
+            terminal::setCursor(width / 2, height / 2 + 1);
+            std::cout << getColoredText("Starting in " + std::to_string(i) + "...", 245) << std::flush;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
 
-        // Hide message
-        terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
-        std::cout << std::string(message.length(), ' ');
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        // Clear the animation
+        for (int y = height / 2 - 3; y <= height / 2 + 3; y++)
+        {
+            terminal::setCursor(width / 4, y);
+            std::cout << std::string(width / 2, ' ') << std::flush;
+        }
     }
-
-    // Show message one final time
-    terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
-    std::cout << getColoredText(message, 226);
-
-    // Countdown animation
-    for (int i = 3; i > 0; i--)
-    {
-        terminal::setCursor(width / 2, height / 2 + 1);
-        std::cout << getColoredText("Starting in " + std::to_string(i) + "...", 245);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-    // Clear the animation
-    for (int y = height / 2 - 3; y <= height / 2 + 3; y++)
-    {
-        terminal::setCursor(width / 4, y);
-        std::cout << std::string(width / 2, ' ');
-    }
-
     // Re-draw the arena since we might have overwritten parts of it
     drawArena();
 }
 
 void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score, int player2Score)
 {
-    // Save current terminal state
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
     terminal::showCursor();
     terminal::clearScreen();
 
-    // Create box for victory message
     int boxWidth = 40;
     int boxHeight = 10;
     int boxX = (width - boxWidth) / 2;
@@ -321,23 +353,20 @@ void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score
 
     // Press any key to continue
     terminal::setCursor(boxX + (boxWidth - 26) / 2, boxY + 8);
-    std::cout << getColoredText("Press any key to continue", 245);
+    std::cout << getColoredText("Press any key to continue", 245) << std::flush;
+
+    std::getchar();
 
     // Reset color
     terminal::resetColor();
-
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-
-    // Clear the victory screen
-    clearScreen();
-    drawArena();
-
-    // Hide cursor again
-    terminal::hideCursor();
 }
 
 void Renderer::showDisconnectMessage()
 {
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
     // Create a box in the middle of the screen
     int boxWidth = 30;
     int boxHeight = 5;
@@ -377,7 +406,7 @@ void Renderer::showDisconnectMessage()
     // Disconnect message
     std::string message = "OPPONENT DISCONNECTED";
     terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
-    std::cout << getColoredText(message, 196); // Red text
+    std::cout << getColoredText(message, 196) << std::flush; // Red text
 
     // Animation: Flash the message a few times
     for (int i = 0; i < 5; i++)
@@ -385,21 +414,20 @@ void Renderer::showDisconnectMessage()
         terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
         if (i % 2 == 0)
         {
-            std::cout << std::string(message.length(), ' ');
+            std::cout << std::string(message.length(), ' ') << std::flush;
         }
         else
         {
-            std::cout << getColoredText(message, 196);
+            std::cout << getColoredText(message, 196) << std::flush;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
 
     // Show message one final time
     terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
-    std::cout << getColoredText(message, 196);
+    std::cout << getColoredText(message, 196) << std::flush;
 
-    // Wait for a few seconds
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Reset color
     terminal::resetColor();
@@ -407,6 +435,12 @@ void Renderer::showDisconnectMessage()
 
 void Renderer::renderGameState(const GameState &state, float interpolation)
 {
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    drawArena();
+
     GameState interpolatedState = interpolateStates(prevState, state, interpolation);
     drawPaddle(prevState.player1, true);
     drawPaddle(prevState.player2, true);
@@ -420,11 +454,23 @@ void Renderer::renderGameState(const GameState &state, float interpolation)
 void Renderer::renderChatMessages(const std::vector<ChatMessageData> &messages)
 {
     drawChatArea();
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
     int startY = height + 6;
     for (size_t i = 0; i < messages.size() && i < 5; ++i)
     {
-        terminal::setCursor(2, startY + i);
-        std::cout << messages[i].sender << ": " << messages[i].content;
+        if (!debug)
+        {
+            terminal::setCursor(2, startY + i);
+        }
+        if (std::string(messages[i].sender) == "")
+        {
+            std::cout << "empty_sender: " << messages[i].content << std::endl;
+        }
+        else
+        {
+            std::cout << messages[i].sender << ": " << messages[i].content << std::endl;
+        }
     }
 }
 

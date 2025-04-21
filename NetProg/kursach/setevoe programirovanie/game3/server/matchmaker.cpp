@@ -96,7 +96,15 @@ void Matchmaker::notifyPlayersAboutMatch(const PlayerInfo &player1, const Player
 
     if (GameInstance *game = gameManager->getGame(gameId))
     {
-        game->startGame();
+        std::thread([gameId, this] {
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
+            // Re-acquire the game pointer after delay
+            if (GameInstance *gameAfterDelay = gameManager->getGame(gameId))
+            {
+                gameAfterDelay->startGame();
+            }
+        }).detach();
     }
 }
 
@@ -155,17 +163,17 @@ std::vector<uint8_t> Matchmaker::createMatchNotificationPacket(const PlayerInfo 
     // Create response structure
     ConnectResponse response;
     response.success = true;
-    strncpy(response.opponentName, opponent.username.c_str(), sizeof(response.opponentName) - 1);
-    response.opponentName[sizeof(response.opponentName) - 1] = '\0';
-
-    strncpy(response.hostAddress, opponent.address.c_str(), sizeof(response.hostAddress) - 1);
-    response.hostAddress[sizeof(response.hostAddress) - 1] = '\0';
+    memset(&response, 0, sizeof(response));
+    strncpy(response.opponentName, opponent.username.data(), opponent.username.size());
+    strncpy(response.hostAddress, opponent.address.data(), opponent.address.size());
 
     response.hostUdpPort = opponent.udpPort;
     response.hostTcpPort = opponent.tcpPort;
 
     // Arbitrary player order determination
     response.isPlayer1 = (player.username < opponent.username);
+
+    response.success = true;
 
     // Create packet
     return createPacket(MessageType::CONNECT_RESPONSE, 0, &response, sizeof(response));

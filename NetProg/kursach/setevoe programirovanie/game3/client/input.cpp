@@ -20,7 +20,7 @@ void restoreTerminal()
     }
 }
 
-InputHandler::InputHandler() : rawModeEnabled(false), chatMode(false)
+InputHandler::InputHandler() : rawModeEnabled(false), chatMode(false), forcedQuit(false)
 {
     // Store the original terminal settings
     tcgetattr(STDIN_FILENO, &originalTermios);
@@ -31,6 +31,19 @@ InputHandler::InputHandler() : rawModeEnabled(false), chatMode(false)
 InputHandler::~InputHandler()
 {
     restoreTerminal();
+}
+
+void InputHandler::prepareForMenuInput()
+{
+    stopChatMode();   // Disables non-blocking
+    disableRawMode(); // Canonical + echo
+    terminal::showCursor();
+
+    std::cin.clear();
+    if (std::cin.rdbuf()->in_avail() > 0)
+    {
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
 }
 
 bool InputHandler::initialize()
@@ -52,6 +65,11 @@ void InputHandler::enableRawMode()
     raw.c_cc[VMIN] = 0;
     raw.c_cc[VTIME] = 0;
 
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ enableRawMode, skipping terminal ops" << std::endl;
+        return;
+    }
     // Apply settings
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 
@@ -68,6 +86,11 @@ void InputHandler::disableRawMode()
         return;
 
     // Restore original terminal settings
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ disableRawMode, skipping terminal ops" << std::endl;
+        return;
+    }
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &originalTermios);
 
     // Reset non-blocking mode
@@ -106,7 +129,7 @@ uint8_t InputHandler::poll()
     if (forcedQuit)
     {
         forcedQuit = false;
-        return InputFlags::QUIT;
+        return 0 | InputFlags::QUIT;
     }
 
     if (chatMode)
@@ -121,7 +144,6 @@ uint8_t InputHandler::poll()
         // Handle quit
         if (c == 'q' || c == 'Q')
         {
-            std::cout << "quitting!!!";
             input |= InputFlags::QUIT;
             if (quitCallback)
                 quitCallback();
@@ -190,13 +212,26 @@ std::string InputHandler::getChatInput()
     newt = oldt;
 
     // Enable echo and canonical mode for chat input
+    disableRawMode();
+    terminal::showCursor();
     newt.c_lflag |= (ECHO | ICANON);
+
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ getChatInput, skipping terminal ops" << std::endl;
+        return "";
+    }
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     // Get the input
     std::string input;
     std::getline(std::cin, input);
 
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ getChatInput, skipping terminal ops" << std::endl;
+        return "";
+    }
     // Restore raw mode settings
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 

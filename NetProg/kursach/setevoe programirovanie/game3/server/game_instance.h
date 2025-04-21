@@ -29,6 +29,14 @@ class GameInstance
     bool hasPlayer(const std::string &clientId) const;
     std::vector<std::string> getAllPlayers() const;
     void broadcastState(NetworkManager *networkManager);
+    void setNetworkManager(NetworkManager *networkManager)
+    {
+        networkManager_ = networkManager;
+    }
+    void setMatchmaker(Matchmaker *matchmaker)
+    {
+        matchmaker_ = matchmaker;
+    }
 
   private:
     void processPlayerInputs();
@@ -45,16 +53,6 @@ class GameInstance
     NetworkManager *networkManager_;
     Matchmaker *matchmaker_;
     uint32_t frameCounter_;
-
-  public:
-    void setNetworkManager(NetworkManager *networkManager)
-    {
-        networkManager_ = networkManager;
-    }
-    void setMatchmaker(Matchmaker *matchmaker)
-    {
-        matchmaker_ = matchmaker;
-    }
 };
 
 } // namespace pong

@@ -182,7 +182,7 @@ void NetworkManager::handleConnectRequest(const std::vector<uint8_t> &data, cons
 
     // Add client to our connected clients
     {
-        std::lock_guard<std::recursive_mutex> lock(clientsMutex);
+        std::lock_guard<std::mutex> lock(clientsMutex);
 
         // Check if client already exists
         auto it = clientIdToIndex.find(clientId);
@@ -212,6 +212,11 @@ void NetworkManager::handleConnectRequest(const std::vector<uint8_t> &data, cons
 
     // Send acknowledgment response
     ConnectResponse response;
+    memset(&response, 0, sizeof(response)); // Zero out entire struct
+    strncpy(response.hostAddress, player.address.data(), player.address.size());
+    response.hostTcpPort = player.tcpPort;
+    response.hostUdpPort = player.udpPort;
+    response.opponentName[0] = '\0';
     response.success = true;
     response.isPlayer1 = (playerId == 1);
 
@@ -237,7 +242,7 @@ void NetworkManager::handlePlayerInput(const std::vector<uint8_t> &data, const s
     // Find player ID from client ID
     uint8_t playerId = 0;
     {
-        std::lock_guard<std::recursive_mutex> lock(clientsMutex);
+        std::lock_guard<std::mutex> lock(clientsMutex);
         auto it = clientIdToIndex.find(clientId);
         if (it != clientIdToIndex.end())
         {
@@ -285,56 +290,77 @@ uint32_t NetworkManager::findGameIdForClient(const std::string &clientId)
 
 void NetworkManager::handleClientDisconnect(const std::string &clientId, bool notifyOthers)
 {
-    std::lock_guard<std::recursive_mutex> lock(clientsMutex);
+    // First check if client exists to avoid unnecessary work
+    {
+        std::lock_guard<std::mutex> lock(clientsMutex);
+        auto it = clientIdToIndex.find(clientId);
+        if (it == clientIdToIndex.end())
+            return;
+    }
 
-    auto it = clientIdToIndex.find(clientId);
-    if (it == clientIdToIndex.end())
-        return;
-
-    const ConnectedClient &disconnected = clients[it->second];
-    std::cout << "Client " << clientId << " disconnected: " << disconnected.address << std::endl;
-
-    // Get game ID
+    // Get game info first before modifying any data structures
     uint32_t gameId = gameManager->findGameIdForClient(clientId);
     GameInstance *game = gameManager->getGame(gameId);
 
-    // Prepare disconnect packet
+    // Create disconnect packet once
     std::vector<uint8_t> packet = createPacket(MessageType::DISCONNECT_EVENT, 0, nullptr, 0);
 
-    // Send disconnect packet BEFORE removing clients
+    // Collect other players that need to be disconnected
+    std::vector<std::string> otherPlayersToDisconnect;
     if (notifyOthers && game)
     {
-        // Disconnect other players
         for (const std::string &otherClientId : game->getAllPlayers())
         {
             if (otherClientId != clientId)
             {
-                std::cout << "Disconnecting remaining player in game " << gameId << ": " << otherClientId << std::endl;
-                sendToClient(otherClientId, packet);
-                handleClientDisconnect(otherClientId, false); // no recursion
+                otherPlayersToDisconnect.push_back(otherClientId);
             }
         }
     }
 
-    // Remove this client from list
-    clients.erase(clients.begin() + it->second);
-    clientIdToIndex.erase(it);
-
-    // Rebuild index
-    clientIdToIndex.clear();
-    for (size_t i = 0; i < clients.size(); ++i)
+    // Notify other players
+    for (const std::string &otherClientId : otherPlayersToDisconnect)
     {
-        clientIdToIndex[clients[i].clientId] = i;
+        std::cout << "Disconnecting remaining player in game " << gameId << ": " << otherClientId << std::endl;
+        sendToClient(otherClientId, packet);
     }
 
-    // Stop and remove game (only once)
+    // Now remove the current client
+    {
+        std::lock_guard<std::mutex> lock(clientsMutex);
+        auto it = clientIdToIndex.find(clientId);
+        if (it == clientIdToIndex.end())
+            return;
+
+        const ConnectedClient &disconnected = clients[it->second];
+        std::cout << "Client " << clientId << " disconnected: " << disconnected.address << std::endl;
+
+        // Remove this client from list
+        clients.erase(clients.begin() + it->second);
+        clientIdToIndex.erase(it);
+
+        // Rebuild index
+        clientIdToIndex.clear();
+        for (size_t i = 0; i < clients.size(); ++i)
+        {
+            clientIdToIndex[clients[i].clientId] = i;
+        }
+    }
+
+    // Handle game cleanup
     if (game)
     {
         game->stopGame();
         gameManager->removeGame(gameId);
     }
-}
 
+    // Finally, recursively disconnect other players, but after we've already
+    // finished processing the current client
+    for (const std::string &otherClientId : otherPlayersToDisconnect)
+    {
+        handleClientDisconnect(otherClientId, false);
+    }
+}
 void NetworkManager::process()
 {
     auto now = std::chrono::steady_clock::now();
@@ -349,7 +375,7 @@ void NetworkManager::process()
 
 void NetworkManager::sendToClient(const std::string &clientId, const std::vector<uint8_t> &packet)
 {
-    std::lock_guard<std::recursive_mutex> lock(clientsMutex);
+    std::lock_guard<std::mutex> lock(clientsMutex);
 
     auto it = clientIdToIndex.find(clientId);
     if (it != clientIdToIndex.end())
@@ -389,7 +415,7 @@ void NetworkManager::sendToClient(const std::string &address, uint16_t port, con
 
 void NetworkManager::broadcastToGame(const std::vector<uint8_t> &packet, uint32_t gameId)
 {
-    std::lock_guard<std::recursive_mutex> lock(clientsMutex);
+    std::lock_guard<std::mutex> lock(clientsMutex);
 
     auto *game = gameManager->getGame(gameId);
     if (!game)

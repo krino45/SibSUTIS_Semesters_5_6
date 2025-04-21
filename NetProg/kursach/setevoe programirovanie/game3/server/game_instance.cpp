@@ -9,6 +9,11 @@ GameInstance::GameInstance(uint32_t id, const std::string &player1, const std::s
     : id_(id), active_(true), player1Id_(player1), player2Id_(player2), networkManager_(nullptr), matchmaker_(nullptr),
       frameCounter_(0)
 {
+    /*
+    GameState gameState_;
+    std::vector<PlayerInput> pendingInputs_;
+    std::mutex inputMutex_; ?
+    */
     gameState_.reset(rand() % 2 == 0);
 }
 
@@ -197,6 +202,10 @@ void GameInstance::broadcastState(NetworkManager *networkManager)
 {
     if (!networkManager)
         return;
+
+    GameState gamestate;
+    memset(&gamestate, 0, sizeof(GameState));
+    gamestate = gameState_;
 
     std::vector<uint8_t> packet =
         createPacket(MessageType::GAME_STATE_UPDATE, gameState_.frame, &gameState_, sizeof(GameState));

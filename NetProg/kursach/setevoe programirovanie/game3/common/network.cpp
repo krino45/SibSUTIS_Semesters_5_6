@@ -8,24 +8,24 @@ namespace pong
 
 std::vector<uint8_t> createPacket(MessageType type, uint32_t frame, const void *data, uint32_t dataSize)
 {
-    std::vector<uint8_t> packet(HEADER_SIZE + dataSize);
+    NetworkHeader header;
+    memset(&header, 0, sizeof(header));
+    header.type = type;
+    header.frame = frame;
+    header.dataSize = dataSize;
 
-    // Create the header
-    NetworkHeader header{type, frame, dataSize};
+    std::vector<uint8_t> packet(sizeof(header) + dataSize, 0);
+    memcpy(packet.data(), &header, sizeof(header));
 
-    // Copy the header to the packet
-    memcpy(packet.data(), &header, HEADER_SIZE);
-
-    // Copy the data (if any) to the packet
-    if (data != nullptr && dataSize > 0)
+    if (data && dataSize > 0)
     {
-        memcpy(packet.data() + HEADER_SIZE, data, dataSize);
+        memcpy(packet.data() + sizeof(header), data, dataSize);
     }
 
     return packet;
 }
 
-std::vector<uint8_t> createInputPacket(uint8_t inputFlags, uint32_t frame)
+std::vector<uint8_t> createInputPacket(uint8_t inputFlags, uint8_t frame)
 {
     PlayerInput input{inputFlags, frame};
     return createPacket(MessageType::PLAYER_INPUT, frame, &input, sizeof(PlayerInput));
@@ -33,45 +33,27 @@ std::vector<uint8_t> createInputPacket(uint8_t inputFlags, uint32_t frame)
 
 std::vector<uint8_t> createChatPacket(const std::string &sender, const std::string &message)
 {
-    // Calculate total size needed for chat message
-    uint16_t contentLength = static_cast<uint16_t>(message.size());
-    uint32_t totalSize = sizeof(ChatMessageData) + contentLength;
+    ChatMessageData chatMsg{};
+    strncpy(chatMsg.sender, sender.c_str(), sizeof(chatMsg.sender) - 1);
+    chatMsg.timestamp = static_cast<uint32_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    chatMsg.contentLength = std::min<uint16_t>(message.size(), sizeof(chatMsg.content) - 1);
+    strncpy(chatMsg.content, message.c_str(), chatMsg.contentLength);
+    chatMsg.content[chatMsg.contentLength] = '\0';
 
-    // Create the buffer for the chat message
-    std::vector<uint8_t> chatData(totalSize);
-    ChatMessageData *chatMsg = reinterpret_cast<ChatMessageData *>(chatData.data());
-
-    // Get current timestamp
-    auto now = std::chrono::system_clock::now();
-    uint32_t timestamp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
-
-    // Fill chat message header
-    strncpy(chatMsg->sender, sender.c_str(), sizeof(chatMsg->sender) - 1);
-    chatMsg->sender[sizeof(chatMsg->sender) - 1] = '\0'; // Ensure null termination
-    chatMsg->timestamp = timestamp;
-    chatMsg->contentLength = contentLength;
-
-    // Copy message content
-    if (contentLength > 0)
-    {
-        memcpy(chatData.data() + sizeof(ChatMessageData), message.c_str(), contentLength);
-    }
-
-    // Create the complete packet
-    return createPacket(MessageType::CHAT_MESSAGE, 0, chatData.data(), totalSize);
+    return createPacket(MessageType::CHAT_MESSAGE, 0, &chatMsg, sizeof(ChatMessageData));
 }
 
 std::vector<uint8_t> createInputPacket(const PlayerInput &input)
 {
-    std::vector<uint8_t> packet(sizeof(NetworkHeader) + sizeof(PlayerInput));
-    NetworkHeader *header = reinterpret_cast<NetworkHeader *>(packet.data());
+    // Ensure padding bytes are initialized
+    PlayerInput cleanedInput;
+    memset(&cleanedInput, 0, sizeof(cleanedInput));
+    cleanedInput.playerId = input.playerId;
+    cleanedInput.flags = input.flags;
+    cleanedInput.frameNumber = input.frameNumber;
 
-    header->type = MessageType::PLAYER_INPUT;
-    header->frame = input.frameNumber;
-    header->dataSize = sizeof(PlayerInput);
-
-    memcpy(packet.data() + sizeof(NetworkHeader), &input, sizeof(PlayerInput));
-    return packet;
+    return createPacket(MessageType::PLAYER_INPUT, input.frameNumber, &cleanedInput, sizeof(cleanedInput));
 }
 
 NetworkHeader parseHeader(const std::vector<uint8_t> &packet)

@@ -10,7 +10,7 @@ namespace pong
 
 Game::Game(InputHandler &inputHandler, Renderer &renderer, NetworkManager &networkManager)
     : inputHandler(inputHandler), renderer(renderer), networkManager(networkManager), gameMode(GameMode::LOCAL),
-      isPlayer1(true), running(true)
+      isPlayer1(true), running(false), ready(false), currentInput(0), udpPort(-1), tcpPort(-1)
 {
     gameState.reset(rand() % 2 == 0);
 }
@@ -33,7 +33,7 @@ void Game::setOpponentInfo(const ConnectResponse &response)
     if (opponentName == "" && opponentAddress == "" && opponentTcpPort == "0" && opponentUdpPort == "0")
     {
         ready = false;
-        // std::cout << "Cleared opponent info.";
+        running = false;
         return;
     }
     ready = true;
@@ -68,7 +68,7 @@ void Game::start()
             lastFrameTime = currentTime;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
 }
 
@@ -94,11 +94,14 @@ void Game::update()
         if (gameState.update())
         {
             renderer.renderGoalAnimation();
+
             int playerScore = gameState.player1.score;
             int AIScore = gameState.player2.score;
             if (playerScore >= gameState.VICTORY_CONDITION || AIScore >= gameState.VICTORY_CONDITION)
             {
-                renderer.showVictoryScreen((playerScore >= AIScore) ? "P1" : "AI", playerScore, AIScore);
+                std::string winnerName = (playerScore >= AIScore) ? "P1" : "AI";
+                renderer.showVictoryScreen(winnerName, playerScore, AIScore);
+                inputHandler.forceQuit();
             }
         }
     }
@@ -109,11 +112,14 @@ void Game::update()
         if (gameState.update())
         {
             renderer.renderGoalAnimation();
+
             int player1Score = gameState.player1.score;
             int player2Score = gameState.player2.score;
             if (player1Score >= gameState.VICTORY_CONDITION || player2Score >= gameState.VICTORY_CONDITION)
             {
-                renderer.showVictoryScreen((player1Score >= player2Score) ? "P1" : "P2", player1Score, player2Score);
+                std::string winnerName = (player1Score >= player2Score) ? "P1" : "P2";
+                renderer.showVictoryScreen(winnerName, player1Score, player2Score);
+                inputHandler.forceQuit();
             }
         }
     }
@@ -204,7 +210,7 @@ void Game::updateAI()
             // Move up
             if (gameState.player2.position.y > 1)
             {
-                gameState.player2.position.y -= 0.2f;
+                gameState.player2.position.y -= 0.15f;
             }
         }
         else if (ballY > centerOfPaddle + 1.0f)
@@ -212,9 +218,58 @@ void Game::updateAI()
             // Move down
             if (gameState.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
             {
-                gameState.player2.position.y += 0.2f;
+                gameState.player2.position.y += 0.15f;
             }
         }
     }
+}
+
+void Game::toggleChat()
+{
+    if (chatActive)
+        return;
+
+    chatActive = true;
+    inputHandler.startChatMode();
+
+    std::thread([this]() {
+        std::string message = inputHandler.getChatInput();
+        if (!message.empty())
+        {
+            networkManager.sendChatMessage(message);
+            ChatMessageData cm;
+            std::string name = "You";
+            strncpy(cm.content, message.data(), message.size());
+            cm.contentLength = message.size();
+            strncpy(cm.sender, name.data(), name.size());
+            auto now = std::chrono::system_clock::now();
+            cm.timestamp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+
+            addChatMessage(cm);
+            renderer.renderChatMessages(getChatMessages());
+        }
+        chatActive = false;
+        inputHandler.stopChatMode();
+    }).detach();
+}
+
+void Game::addChatMessage(const ChatMessageData message)
+{
+    std::cout << "NEW CHAT MESSAGE: " << message.sender << ":" << message.content << std::endl;
+
+    // Add to the chat messages vector
+    chatMessages.push_back(message);
+
+    // Limit the number of messages to display (keep the most recent ones)
+    const size_t MAX_MESSAGES = 5;
+    if (chatMessages.size() > MAX_MESSAGES)
+    {
+        chatMessages.erase(chatMessages.begin(), chatMessages.begin() + (chatMessages.size() - MAX_MESSAGES));
+    }
+}
+
+const std::vector<ChatMessageData> &Game::getChatMessages() const
+{
+    return chatMessages;
 }
 } // namespace pong

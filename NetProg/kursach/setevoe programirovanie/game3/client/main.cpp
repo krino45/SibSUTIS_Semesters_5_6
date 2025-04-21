@@ -7,18 +7,36 @@
 #include "network.h"
 #include "render.h"
 #include <iostream>
+#include <signal.h>
 #include <thread>
+
+volatile bool running = true;
+
+// Signal handler
+void signalHandler(int signal)
+{
+    std::cout << "Received interrupt / termination signal. Exiting..." << std::endl;
+    if (!running)
+    {
+        std::exit(1);
+    }
+    running = false;
+}
 
 int main()
 {
-    while (true)
-    {
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
 
+    while (running)
+    {
         pong::InputHandler inputHandler;
         pong::Renderer renderer;
         pong::NetworkManager networkManager;
-        pong::Game game(inputHandler, renderer, networkManager);
 
+        auto game = std::make_shared<pong::Game>(inputHandler, renderer, networkManager);
+
+        // Rest of initialization...
         srand(time(NULL));
 
         if (!inputHandler.initialize() || !renderer.initialize())
@@ -26,8 +44,6 @@ int main()
             std::cerr << "Failed to initialize input or renderer." << std::endl;
             return 1;
         }
-
-        inputHandler.disableRawMode();
 
         std::cout << "\nPONG GAME" << std::endl;
         std::cout << "1. Single Player" << std::endl;
@@ -38,20 +54,32 @@ int main()
         std::cout << "Select mode: ";
 
         std::string choice;
+
+        inputHandler.prepareForMenuInput();
+
+        int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+        // std::cout << "[DEBUG] stdin flags: " << std::hex << flags << std::dec << "\n";
+        if (flags == -1)
+        {
+            std::cerr << "[ERROR] fcntl failed: " << strerror(errno) << std::endl;
+            std::exit(1);
+        }
+
         std::getline(std::cin, choice);
+        // std::cout << "[DEBUG] User entered: \"" << choice << "\"" << std::endl;
 
         if (choice == "1")
         {
-            game.setGameMode(pong::GameMode::LOCAL);
+            game->setGameMode(pong::GameMode::LOCAL);
         }
         else if (choice == "2")
         {
-            game.setGameMode(pong::GameMode::LOCALMULTIPLAYER);
+            game->setGameMode(pong::GameMode::LOCALMULTIPLAYER);
         }
         else if (choice == "3" || choice == "4")
         {
             // Multiplayer mode
-            game.setGameMode(pong::GameMode::ONLINE);
+            game->setGameMode(pong::GameMode::ONLINE);
 
             std::string serverAddress;
             std::string username;
@@ -67,19 +95,81 @@ int main()
             }
 
             if (choice == "3")
-                game.setIsPlayer1(true);
+                game->setIsPlayer1(true);
             else
-                game.setIsPlayer1(false);
+                game->setIsPlayer1(false);
 
-            if (!networkManager.connectToServer(serverAddress, 8081 + rand() % 1000, 8082 + rand() % 1000, username,
-                                                1000))
+            game->udpPort = 8081 + rand() % 1000;
+            game->tcpPort = 8082 + rand() % 1000;
+            while (game->udpPort == game->tcpPort)
+            {
+                game->tcpPort = 8082 + rand() % 1000; // Making sure they dont match
+            }
+            if (!networkManager.connectToServer(serverAddress, game->udpPort, game->tcpPort, username, 1000))
             {
                 std::cerr << "Failed to connect to server." << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 pong::terminal::clearScreen();
+
+                if (!running)
+                {
+                    break;
+                }
                 continue;
             }
 
+            inputHandler.setChatCallback([&game]() { game->toggleChat(); });
+            inputHandler.setQuitCallback([&]() {
+                networkManager.stopChat();
+                pong::ConnectResponse empty{};
+                game->setOpponentInfo(empty);
+                game->running = false;
+            });
+
+            networkManager.onMatchFound = [&](const pong::ConnectResponse &response) {
+                game->setOpponentInfo(response);
+                if (response.isPlayer1)
+                {
+                    networkManager.startChatServer(game->tcpPort);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    networkManager.connectToChat(response.hostAddress, response.hostTcpPort);
+                }
+                // std::cout << "\n\nDebug: " << response.hostAddress << response.hostTcpPort << response.hostUdpPort
+                //   << response.opponentName << response.success << response.isPlayer1 << std::flush;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(400));
+                renderer.initializeChatArea(response.opponentName);
+                game->getRenderer().showMatchFoundAnimation(response.opponentName);
+            };
+
+            networkManager.onScoreEvent = [game](const pong::ScoreEvent &event) {
+                game->getRenderer().renderGoalAnimation();
+            };
+
+            networkManager.onVictoryEvent = [&](const pong::VictoryEvent &event) {
+                networkManager.stopChat();
+                game->getRenderer().showVictoryScreen(event.winnerName, event.player1Score, event.player2Score);
+                pong::ConnectResponse empty{};
+                game->setOpponentInfo(empty);
+                game->getInputHandler().forceQuit();
+            };
+
+            networkManager.onDisconnectEvent = [&]() {
+                networkManager.stopChat();
+                pong::ConnectResponse empty{};
+                game->getRenderer().showDisconnectMessage();
+                game->setOpponentInfo(empty);
+                game->getInputHandler().forceQuit();
+            };
+
+            networkManager.onChatMessage = [&](const pong::ChatMessageData &message) {
+                game->addChatMessage(message);
+                renderer.renderChatMessages(game->getChatMessages());
+            };
             std::cout << "Connected to server. Waiting for game to start..." << std::endl;
         }
         else if (choice == "9" || choice == "q" || choice == "Q")
@@ -91,46 +181,37 @@ int main()
             std::cerr << "Invalid choice." << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
             pong::terminal::clearScreen();
-            continue;
-        }
 
-        networkManager.onMatchFound = [&](const pong::ConnectResponse &response) { game.setOpponentInfo(response); };
-        networkManager.onScoreEvent = [&](const pong::ScoreEvent &event) { renderer.renderGoalAnimation(); };
-        networkManager.onVictoryEvent = [&](const pong::VictoryEvent &event) {
-            renderer.showVictoryScreen(event.winnerName, event.player1Score, event.player2Score);
-            pong::ConnectResponse empty{};
-            game.setOpponentInfo(empty);
-        };
-
-        networkManager.onDisconnectEvent = [&]() {
-            pong::ConnectResponse empty{};
-            renderer.showDisconnectMessage();
-            game.setOpponentInfo(empty);
-            inputHandler.forceQuit();
-        };
-
-        while (true && (choice != "1" && choice != "2"))
-        {
-            networkManager.processCallbacks();
-            if (game.ready)
+            if (!running)
             {
                 break;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(32));
+            continue;
+        }
+
+        while (choice != "1" && choice != "2" && running)
+        {
+            networkManager.processCallbacks();
+            if (game->ready)
+            {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(64));
         }
 
         renderer.initialize();
-        game.start();
+        game->start();
 
-        while (game.running)
-        {
-            game.update();
-            renderer.renderScore(game.getGameState());
-            renderer.renderControls();
-            renderer.renderGameState(game.getGameState());
+        // // Main game loop using the same instance
+        // while (game->running && running)
+        // {
+        //     game->update();
+        //     renderer.renderGameState(game->getGameState());
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        // }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        }
+        inputHandler.disableRawMode();
+        pong::terminal::showCursor();
     }
 
     return 0;

@@ -77,7 +77,7 @@ class NetworkManager
     bool running;
 
     // Client management
-    std::recursive_mutex clientsMutex;
+    std::mutex clientsMutex;
     std::vector<ConnectedClient> clients;
     std::unordered_map<std::string, size_t> clientIdToIndex;
 

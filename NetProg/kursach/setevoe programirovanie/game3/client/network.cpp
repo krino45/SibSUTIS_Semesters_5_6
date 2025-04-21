@@ -5,15 +5,42 @@
 namespace pong
 {
 
-NetworkManager::NetworkManager() : udpSocket(-1)
+NetworkManager::NetworkManager()
+    : udpSocket(-1), tcpSocket(-1), hasPendingResponse(false), pendingResponse({}), chatClientSocket(-1)
 {
 }
 
 NetworkManager::~NetworkManager()
 {
-    if (udpSocket != -1)
+    running = false;
+
+    // Force wakeup the network thread if it's blocked in recvfrom
+    if (udpSocket != -1 && udpSocket != 0)
     {
+        shutdown(udpSocket, SHUT_RDWR);
+        if (serverAddr.sin_port != 0)
+        {
+            sendto(udpSocket, "", 0, 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+        }
         close(udpSocket);
+        udpSocket = -1;
+    }
+
+    if (tcpSocket != -1 && udpSocket != 0)
+    {
+        shutdown(tcpSocket, SHUT_RDWR);
+        close(tcpSocket);
+        tcpSocket = -1;
+    }
+
+    if (listenThread.joinable())
+    {
+        listenThread.join();
+    }
+
+    if (chatThread.joinable())
+    {
+        chatThread.join();
     }
 }
 
@@ -75,7 +102,8 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
     }
 
     connectionSuccess = false;
-    std::thread([this]() {
+    running = true;
+    std::thread connectionThread([this]() {
         fd_set readSet;
         struct timeval timeout;
 
@@ -124,7 +152,8 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
         }
 
         startListening(); // Continue game packet listening
-    }).detach();
+    });
+    connectionThread.detach();
 
     {
         std::unique_lock<std::mutex> lock(connectionMutex);
@@ -142,8 +171,8 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
 
 void NetworkManager::startListening()
 {
-    std::thread([this]() {
-        while (true)
+    listenThread = std::thread([this]() {
+        while (running)
         {
             std::vector<uint8_t> packet = receivePacket();
             if (!packet.empty())
@@ -151,7 +180,7 @@ void NetworkManager::startListening()
                 handlePacket(packet);
             }
         }
-    }).detach();
+    });
 }
 
 void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
@@ -188,7 +217,7 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
             GameState state;
             if (state.deserialize(std::vector<uint8_t>(packet.begin() + sizeof(NetworkHeader), packet.end())))
             {
-                // Store the latest game state
+                std::lock_guard<std::mutex> lock(gameStateMutex);
                 latestGameState = state;
                 gameStateUpdated = true;
             }
@@ -207,10 +236,16 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
                 onScoreEvent(*event);
             }
         }
+        else
+        {
+            std::cerr << "want: >=" << sizeof(NetworkHeader) + sizeof(ScoreEvent) << ", got: " << packet.size()
+                      << std::endl;
+        }
         break;
     }
 
     case MessageType::VICTORY_EVENT: {
+
         if (packet.size() >= sizeof(NetworkHeader) + sizeof(VictoryEvent))
         {
             const VictoryEvent *event = reinterpret_cast<const VictoryEvent *>(packet.data() + sizeof(NetworkHeader));
@@ -221,11 +256,15 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
                 onVictoryEvent(*event);
             }
         }
+        else
+        {
+            std::cerr << "want: >=" << sizeof(NetworkHeader) + sizeof(VictoryEvent) << ", got: " << packet.size()
+                      << std::endl;
+        }
         break;
     }
 
     case MessageType::DISCONNECT_EVENT: {
-        // Opponent disconnected
         if (onDisconnectEvent)
         {
             onDisconnectEvent();
@@ -235,7 +274,6 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
 
     default:
         std::cerr << "Unknown message type: " << static_cast<int>(header->type) << "\n";
-        // Handle other message types as needed
         break;
     }
 }
@@ -263,36 +301,11 @@ void NetworkManager::sendPlayerInput(uint8_t inputFlags, uint32_t currentFrame)
 
 bool NetworkManager::receiveGameState(GameState &state)
 {
+    std::lock_guard<std::mutex> lock(gameStateMutex);
     state = latestGameState;
+    bool updated = gameStateUpdated;
     gameStateUpdated = false;
     return true;
-}
-
-std::vector<uint8_t> NetworkManager::createInputPacket(const PlayerInput &input)
-{
-    std::vector<uint8_t> packet(sizeof(NetworkHeader) + sizeof(PlayerInput));
-    NetworkHeader *header = reinterpret_cast<NetworkHeader *>(packet.data());
-
-    header->type = MessageType::PLAYER_INPUT;
-    header->frame = input.frameNumber;
-    header->dataSize = sizeof(PlayerInput);
-
-    memcpy(packet.data() + sizeof(NetworkHeader), &input, sizeof(PlayerInput));
-    return packet;
-}
-
-void NetworkManager::sendChatMessage(const std::string &message, std::string opponentUdpPort)
-{
-    // For direct player-to-player chat (bypassing server as requested)
-    std::vector<uint8_t> packet = createChatPacket(username, message);
-
-    // Set up recipient address for direct communication
-    sockaddr_in peerAddr;
-    peerAddr.sin_family = AF_INET;
-    peerAddr.sin_port = htons(std::stoi(opponentUdpPort));
-    inet_pton(AF_INET, serverAddress.c_str(), &peerAddr.sin_addr);
-
-    sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&peerAddr, sizeof(peerAddr));
 }
 
 std::vector<uint8_t> NetworkManager::receivePacket()
@@ -325,14 +338,209 @@ bool NetworkManager::isConnected()
 {
     return connectionSuccess;
 }
-
 void NetworkManager::processCallbacks()
 {
     std::lock_guard<std::mutex> lock(callbackMutex);
-    if (hasPendingResponse && onMatchFound)
+
+    // Make a local copy of the response to ensure thread safety
+    ConnectResponse response;
+    bool shouldProcess = false;
+
+    if (hasPendingResponse)
     {
-        onMatchFound(pendingResponse);
+        // Copy all fields explicitly to avoid padding issues
+        response.success = pendingResponse.success;
+        response.isPlayer1 = pendingResponse.isPlayer1;
+        response.hostUdpPort = pendingResponse.hostUdpPort;
+        response.hostTcpPort = pendingResponse.hostTcpPort;
+        strncpy(response.hostAddress, pendingResponse.hostAddress, sizeof(response.hostAddress));
+        strncpy(response.opponentName, pendingResponse.opponentName, sizeof(response.opponentName));
+
+        shouldProcess = true;
         hasPendingResponse = false;
+    }
+
+    if (shouldProcess && onMatchFound)
+    {
+        onMatchFound(response);
+    }
+}
+
+bool NetworkManager::startChatServer(uint16_t port)
+{
+    tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (tcpSocket == -1)
+    {
+        perror("chat socket");
+        return false;
+    }
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(port);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(tcpSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)))
+    {
+        perror("chat bind");
+        close(tcpSocket);
+        return false;
+    }
+
+    if (listen(tcpSocket, 10))
+    {
+        perror("chat listen");
+        close(tcpSocket);
+        return false;
+    }
+
+    chatRunning = true;
+    chatThread = std::thread([this]() {
+        sockaddr_in clientAddr{};
+        socklen_t clientLen = sizeof(clientAddr);
+        int clientSocket = accept(tcpSocket, (struct sockaddr *)&clientAddr, &clientLen);
+        chatClientSocket = clientSocket;
+
+        if (clientSocket < 0)
+        {
+            perror("chat accept");
+            return;
+        }
+
+        std::vector<uint8_t> buffer(sizeof(NetworkHeader) + sizeof(ChatMessageData));
+        while (chatRunning)
+        {
+            ssize_t bytes = recv(clientSocket, buffer.data(), buffer.size(), 0);
+            if (bytes <= 0)
+            {
+                if (bytes == 0)
+                {
+                    // std::cerr << "Connection closed by peer." << std::endl;
+                }
+                else
+                {
+                    std::cerr << "recv error: " << strerror(errno) << std::endl;
+                }
+                break;
+            }
+
+            std::lock_guard<std::mutex> lock(chatMutex);
+
+            const NetworkHeader *header = reinterpret_cast<const NetworkHeader *>(buffer.data());
+            ChatMessageData *message = reinterpret_cast<ChatMessageData *>(buffer.data() + sizeof(NetworkHeader));
+
+            chatMessages.push_back(*message);
+            if (onChatMessage)
+            {
+                onChatMessage(*message);
+            }
+        }
+        close(clientSocket);
+    });
+
+    return true;
+}
+
+bool NetworkManager::connectToChat(const std::string &address, uint16_t port)
+{
+    tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (tcpSocket == -1)
+    {
+        perror("chat socket");
+        return false;
+    }
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(port);
+    inet_pton(AF_INET, address.c_str(), &serverAddr.sin_addr);
+
+    if (connect(tcpSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)))
+    {
+        perror("chat connect");
+        close(tcpSocket);
+        return false;
+    }
+
+    chatRunning = true;
+    chatThread = std::thread([this]() {
+        std::vector<uint8_t> buffer(sizeof(NetworkHeader) + sizeof(ChatMessageData));
+        while (chatRunning)
+        {
+            ssize_t bytes = recv(tcpSocket, buffer.data(), buffer.size(), 0);
+            if (bytes <= 0)
+            {
+                if (bytes == 0)
+                {
+                    // std::cerr << "Connection closed by peer." << std::endl;
+                }
+                else
+                {
+                    std::cerr << "recv error: " << strerror(errno) << std::endl;
+                }
+                break;
+            }
+            std::lock_guard<std::mutex> lock(chatMutex);
+
+            const NetworkHeader *header = reinterpret_cast<const NetworkHeader *>(buffer.data());
+            const ChatMessageData *message =
+                reinterpret_cast<const ChatMessageData *>(buffer.data() + sizeof(NetworkHeader));
+            chatMessages.push_back(*message);
+            if (onChatMessage)
+            {
+                onChatMessage(*message);
+            }
+        }
+    });
+
+    return true;
+}
+
+void NetworkManager::sendChatMessage(const std::string &message_text)
+{
+    int socket = chatClientSocket != -1 ? chatClientSocket : tcpSocket;
+    if (socket != -1)
+    {
+        std::vector<uint8_t> packet = createChatPacket(username, message_text);
+        std::cout << "Sending to tcpSocket on " << socket << "\n" << std::flush;
+        ssize_t bytesSent = send(socket, packet.data(), packet.size(), MSG_NOSIGNAL);
+        if (bytesSent <= 0)
+        {
+            if (bytesSent == 0)
+            {
+                // std::cerr << "Connection closed by peer." << std::endl;
+            }
+            else
+            {
+                std::cerr << "send error: " << strerror(errno) << std::endl;
+            }
+        }
+    }
+    else
+    {
+        std::cerr << "TCP socket is not open!" << std::endl;
+        return;
+    }
+}
+
+std::vector<ChatMessageData> NetworkManager::getChatMessages()
+{
+    std::lock_guard<std::mutex> lock(chatMutex);
+    return chatMessages;
+}
+
+void NetworkManager::stopChat()
+{
+    chatRunning = false;
+    if (tcpSocket != -1)
+    {
+        shutdown(tcpSocket, SHUT_RDWR);
+        close(tcpSocket);
+        tcpSocket = -1;
+    }
+    if (chatThread.joinable())
+    {
+        chatThread.join();
     }
 }
 
