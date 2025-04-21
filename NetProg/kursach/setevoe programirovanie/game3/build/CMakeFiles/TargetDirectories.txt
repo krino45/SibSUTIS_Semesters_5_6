@@ -1,0 +1,4 @@
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/CMakeFiles/pong_client.dir
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/CMakeFiles/pong_server.dir
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/CMakeFiles/edit_cache.dir
+/home/krino45/Desktop/sem6/NetProg/kursach/setevoe programirovanie/game3/build/CMakeFiles/rebuild_cache.dir
