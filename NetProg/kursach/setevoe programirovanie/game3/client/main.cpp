@@ -18,6 +18,7 @@ void signalHandler(int signal)
     std::cout << "Received interrupt / termination signal. Exiting..." << std::endl;
     if (!running)
     {
+        pong::restoreTerminal();
         std::exit(1);
     }
     running = false;
@@ -57,15 +58,17 @@ int main()
 
         inputHandler.prepareForMenuInput();
 
-        int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-        // std::cout << "[DEBUG] stdin flags: " << std::hex << flags << std::dec << "\n";
-        if (flags == -1)
+        if (!std::getline(std::cin, choice))
         {
-            std::cerr << "[ERROR] fcntl failed: " << strerror(errno) << std::endl;
-            std::exit(1);
+            if (std::cin.eof())
+            {
+                continue;
+            }
+            else
+            {
+                std::cerr << "Unknown std_in error\n";
+            }
         }
-
-        std::getline(std::cin, choice);
         // std::cout << "[DEBUG] User entered: \"" << choice << "\"" << std::endl;
 
         if (choice == "1")
@@ -105,7 +108,7 @@ int main()
             {
                 game->tcpPort = 8082 + rand() % 1000; // Making sure they dont match
             }
-            if (!networkManager.connectToServer(serverAddress, game->udpPort, game->tcpPort, username, 1000))
+            if (!networkManager.connectToServer(serverAddress, game->udpPort, game->tcpPort, username))
             {
                 std::cerr << "Failed to connect to server." << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -143,7 +146,8 @@ int main()
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(400));
                 renderer.initializeChatArea(response.opponentName);
-                game->getRenderer().showMatchFoundAnimation(response.opponentName);
+
+                game->getRenderer().showMatchFoundAnimation(response.opponentName, response.mmr);
             };
 
             networkManager.onScoreEvent = [game](const pong::ScoreEvent &event) {
@@ -151,19 +155,13 @@ int main()
             };
 
             networkManager.onVictoryEvent = [&](const pong::VictoryEvent &event) {
-                networkManager.stopChat();
                 game->getRenderer().showVictoryScreen(event.winnerName, event.player1Score, event.player2Score);
-                pong::ConnectResponse empty{};
-                game->setOpponentInfo(empty);
-                game->getInputHandler().forceQuit();
+                game->running = false;
             };
 
             networkManager.onDisconnectEvent = [&]() {
-                networkManager.stopChat();
-                pong::ConnectResponse empty{};
                 game->getRenderer().showDisconnectMessage();
-                game->setOpponentInfo(empty);
-                game->getInputHandler().forceQuit();
+                game->running = false;
             };
 
             networkManager.onChatMessage = [&](const pong::ChatMessageData &message) {
@@ -174,7 +172,8 @@ int main()
         }
         else if (choice == "9" || choice == "q" || choice == "Q")
         {
-            std::exit(0);
+            running = false;
+            continue;
         }
         else
         {
@@ -201,17 +200,7 @@ int main()
 
         renderer.initialize();
         game->start();
-
-        // // Main game loop using the same instance
-        // while (game->running && running)
-        // {
-        //     game->update();
-        //     renderer.renderGameState(game->getGameState());
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        // }
-
-        inputHandler.disableRawMode();
-        pong::terminal::showCursor();
+        networkManager.stopChat();
     }
 
     return 0;

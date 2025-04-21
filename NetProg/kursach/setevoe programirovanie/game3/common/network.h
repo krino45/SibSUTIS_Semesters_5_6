@@ -64,6 +64,7 @@ struct ConnectResponse
 {
     bool success;
     char opponentName[32];
+    uint32_t mmr;
     char hostAddress[16]; // IPv4 address string
     uint16_t hostUdpPort;
     uint16_t hostTcpPort;

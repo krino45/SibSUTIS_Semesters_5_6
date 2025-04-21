@@ -12,10 +12,14 @@
 namespace pong
 {
 
+void restoreTerminal();
+
 // Input handler class
 class InputHandler
 {
   public:
+    static InputHandler *globalInputHandler;
+
     InputHandler();
     ~InputHandler();
 

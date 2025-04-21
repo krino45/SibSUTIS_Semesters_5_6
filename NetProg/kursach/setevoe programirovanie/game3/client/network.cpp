@@ -45,12 +45,11 @@ NetworkManager::~NetworkManager()
 }
 
 bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t udpPort, uint16_t tcpPort,
-                                     const std::string &username, uint32_t mmr)
+                                     const std::string &username)
 {
     this->serverAddress = serverAddress;
     this->udpPort = udpPort;
     this->username = username;
-    this->mmr = mmr;
 
     // Create UDP socket
     udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -89,7 +88,7 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
     strncpy(request.username, username.c_str(), sizeof(request.username));
     request.udpPort = udpPort;
     request.tcpPort = tcpPort; // For direct player-to-player chat
-    request.mmr = mmr;
+    request.mmr = 69;          // unneeded
 
     std::vector<uint8_t> packet = createPacket(MessageType::CONNECT_REQUEST, 0, &request, sizeof(request));
 
@@ -102,8 +101,9 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
     }
 
     connectionSuccess = false;
+    bool connectionDeclined = false;
     running = true;
-    std::thread connectionThread([this]() {
+    std::thread connectionThread([&]() {
         fd_set readSet;
         struct timeval timeout;
 
@@ -144,9 +144,12 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
                         std::cout << "Successfully connected to server" << std::endl;
                         if (onMatchFound)
                             onMatchFound(*response);
-
-                        connectionCV.notify_one();
                     }
+                    else
+                    {
+                        connectionDeclined = true;
+                    }
+                    connectionCV.notify_one();
                 }
             }
         }
@@ -158,6 +161,12 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
     {
         std::unique_lock<std::mutex> lock(connectionMutex);
         connectionCV.wait_for(lock, std::chrono::seconds(5), [this]() { return connectionSuccess; });
+    }
+
+    if (connectionDeclined)
+    {
+        std::cerr << "Connection declined by server (are you already logged in?)" << std::endl;
+        return false;
     }
 
     if (!connectionSuccess)
@@ -196,7 +205,7 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
         const ConnectResponse *response =
             reinterpret_cast<const ConnectResponse *>(packet.data() + sizeof(NetworkHeader));
 
-        std::cout << "[MATCHMAKING] Opponent: " << response->opponentName << std::endl;
+        std::cout << "[MATCHMAKING] Opponent: " << response->opponentName << "(" << response->mmr << ")" << std::endl;
         std::cout << "Address: " << response->hostAddress << ", UDP: " << response->hostUdpPort
                   << ", TCP: " << response->hostTcpPort << std::endl;
         std::cout << "You are player " << (response->isPlayer1 ? "1" : "2") << std::endl;
@@ -355,6 +364,7 @@ void NetworkManager::processCallbacks()
         response.hostTcpPort = pendingResponse.hostTcpPort;
         strncpy(response.hostAddress, pendingResponse.hostAddress, sizeof(response.hostAddress));
         strncpy(response.opponentName, pendingResponse.opponentName, sizeof(response.opponentName));
+        response.mmr = pendingResponse.mmr;
 
         shouldProcess = true;
         hasPendingResponse = false;

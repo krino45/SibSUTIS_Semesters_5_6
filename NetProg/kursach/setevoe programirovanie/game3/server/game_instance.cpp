@@ -63,17 +63,13 @@ void GameInstance::update()
     frameCounter_++;
     gameState_.frame = frameCounter_;
 
-    // Update ball position and handle collisions
     if (gameState_.update())
     {
-        // A goal was scored
         handleGoalScored();
     }
 
-    // Process all pending player inputs
     processPlayerInputs();
 
-    // Broadcast state to clients
     if (networkManager_ != nullptr)
     {
         broadcastState(networkManager_);
@@ -87,7 +83,6 @@ void GameInstance::update()
 
 void GameInstance::handleGoalScored()
 {
-    // Create score event packet
     ScoreEvent scoreEvent;
     scoreEvent.scoringPlayer = (gameState_.lastScoringPlayerIsPlayer1) ? 1 : 2;
     scoreEvent.player1Score = gameState_.player1.score;

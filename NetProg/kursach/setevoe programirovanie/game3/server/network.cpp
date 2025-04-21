@@ -175,13 +175,15 @@ void NetworkManager::handleConnectRequest(const std::vector<uint8_t> &data, cons
 
     // Register player with matchmaker
     uint8_t playerId = 0;
+    bool success = false;
     if (matchmaker)
     {
         playerId = matchmaker->registerPlayer(player);
     }
-
-    // Add client to our connected clients
+    if (playerId != 0)
     {
+        success = true;
+        // Add client to our connected clients
         std::lock_guard<std::mutex> lock(clientsMutex);
 
         // Check if client already exists
@@ -217,8 +219,9 @@ void NetworkManager::handleConnectRequest(const std::vector<uint8_t> &data, cons
     response.hostTcpPort = player.tcpPort;
     response.hostUdpPort = player.udpPort;
     response.opponentName[0] = '\0';
-    response.success = true;
+    response.success = success;
     response.isPlayer1 = (playerId == 1);
+    response.mmr = 420;
 
     std::vector<uint8_t> responsePacket = createPacket(MessageType::CONNECT_RESPONSE, 0, &response, sizeof(response));
 
@@ -298,6 +301,11 @@ void NetworkManager::handleClientDisconnect(const std::string &clientId, bool no
             return;
     }
 
+    if (notifyOthers)
+    { // primary disconnectee
+        matchmaker->handlePlayerDisconnect(clientId);
+    }
+
     // Get game info first before modifying any data structures
     uint32_t gameId = gameManager->findGameIdForClient(clientId);
     GameInstance *game = gameManager->getGame(gameId);
@@ -356,10 +364,11 @@ void NetworkManager::handleClientDisconnect(const std::string &clientId, bool no
 
     // Finally, recursively disconnect other players, but after we've already
     // finished processing the current client
-    for (const std::string &otherClientId : otherPlayersToDisconnect)
-    {
-        handleClientDisconnect(otherClientId, false);
-    }
+    if (notifyOthers)
+        for (const std::string &otherClientId : otherPlayersToDisconnect)
+        {
+            handleClientDisconnect(otherClientId, false);
+        }
 }
 void NetworkManager::process()
 {

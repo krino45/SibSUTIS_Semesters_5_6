@@ -34,7 +34,7 @@ class Renderer
     void initializeChatArea(const std::string &opponentName);
 
     void renderGoalAnimation();
-    void showMatchFoundAnimation(const std::string &opponentName);
+    void showMatchFoundAnimation(const std::string &opponentName, uint32_t mmr);
     void showVictoryScreen(const std::string &winnerName, int player1Score, int player2Score);
     void showDisconnectMessage();
 

@@ -8,6 +8,7 @@ namespace pong
 
 Matchmaker::Matchmaker() : networkManager(nullptr), gameManager(nullptr), currentPlayer1(""), currentPlayer2("")
 {
+    loadMMR();
 }
 
 Matchmaker::~Matchmaker()
@@ -25,6 +26,7 @@ void Matchmaker::loadMMR()
         int mmr;
         if (std::getline(ss, name, ',') && ss >> mmr)
         {
+            std::cout << "Loaded mmr of player " << name << ": " << mmr << std::endl;
             mmrMap[name] = mmr;
         }
     }
@@ -32,7 +34,7 @@ void Matchmaker::loadMMR()
 
 void Matchmaker::saveMMR()
 {
-    std::ofstream file(mmrFile);
+    std::ofstream file(mmrFile, std::ios_base::openmode::_S_ate);
     for (const auto &[user, mmr] : mmrMap)
     {
         file << user << "," << mmr << "\n";
@@ -50,6 +52,9 @@ void Matchmaker::updateMMR(const std::string &winner, const std::string &loser)
 
     mmrMap[winner] = std::round(Ra + K * (1 - Ea));
     mmrMap[loser] = std::round(Rb + K * (0 - Eb));
+
+    std::cout << "New mmr of " << winner << "(" << Ra << ") is " << mmrMap[winner] << std::endl;
+    std::cout << "New mmr of " << loser << "(" << Rb << ") is " << mmrMap[loser] << std::endl;
 
     saveMMR();
 }
@@ -112,8 +117,8 @@ bool Matchmaker::findMatch(PlayerInfo &player1, PlayerInfo &player2)
         waitingPlayers.pop();
     }
 
-    const int maxDeltaStart = 100;
-    const int maxDeltaLimit = 600;
+    const int maxDeltaStart = 50;
+    const int maxDeltaLimit = 450;
 
     for (int delta = maxDeltaStart; delta <= maxDeltaLimit; delta += 100)
     {
@@ -199,25 +204,32 @@ std::string Matchmaker::getPlayer2Name()
 
 void Matchmaker::deregisterPlayer(const std::string &username)
 {
-
     std::lock_guard<std::mutex> lock(queueMutex);
-    auto it = activePlayersByUsername.find(username);
-    if (it != activePlayersByClientId.end())
-    {
-        const std::string &clientId = it->second.clientId;
-        activePlayersByUsername.erase(username);
-        activePlayersByClientId.erase(clientId);
 
-        // Check if this was one of the current players
-        std::lock_guard<std::mutex> plock(playersMutex);
-        if (username == currentPlayer1)
-        {
-            currentPlayer1.clear();
-        }
-        if (username == currentPlayer2)
-        {
-            currentPlayer2.clear();
-        }
+    // Find the player in activePlayersByUsername
+    auto usernameIt = activePlayersByUsername.find(username);
+    if (usernameIt == activePlayersByUsername.end())
+    {
+        // Player not found, no further action needed
+        return;
+    }
+
+    // Extract clientId before erasing
+    const std::string clientId = usernameIt->second.clientId;
+
+    // Erase from both maps (order matters!)
+    activePlayersByUsername.erase(usernameIt); // Erase by iterator to avoid rehashing
+    activePlayersByClientId.erase(clientId);   // Now safe to erase from the other map
+
+    // Check if this was one of the current players
+    std::lock_guard<std::mutex> plock(playersMutex);
+    if (username == currentPlayer1)
+    {
+        currentPlayer1.clear();
+    }
+    if (username == currentPlayer2)
+    {
+        currentPlayer2.clear();
     }
 
     // Remove from waiting queue if present
@@ -303,6 +315,7 @@ std::vector<uint8_t> Matchmaker::createMatchNotificationPacket(const PlayerInfo 
 
     response.hostUdpPort = opponent.udpPort;
     response.hostTcpPort = opponent.tcpPort;
+    response.mmr = mmrMap[opponent.username];
 
     // Arbitrary player order determination
     response.isPlayer1 = (player.username < opponent.username);

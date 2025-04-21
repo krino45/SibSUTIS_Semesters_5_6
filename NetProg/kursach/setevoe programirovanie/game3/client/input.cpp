@@ -2,18 +2,18 @@
 #include "input.h"
 #include "../common/utils.h"
 #include <cstring>
+#include <fstream>
 #include <iostream>
 
 namespace pong
 {
-
-static pong::InputHandler *globalInputHandler = nullptr;
+InputHandler *InputHandler::globalInputHandler = nullptr;
 
 void restoreTerminal()
 {
-    if (globalInputHandler)
+    if (InputHandler::globalInputHandler)
     {
-        globalInputHandler->disableRawMode();
+        InputHandler::globalInputHandler->disableRawMode();
         pong::terminal::showCursor();
         pong::terminal::resetColor();
         std::cout << std::endl;
@@ -25,25 +25,49 @@ InputHandler::InputHandler() : rawModeEnabled(false), chatMode(false), forcedQui
     // Store the original terminal settings
     tcgetattr(STDIN_FILENO, &originalTermios);
     globalInputHandler = this;
-    std::atexit(restoreTerminal);
 }
 
 InputHandler::~InputHandler()
 {
-    restoreTerminal();
+    tcsetattr(STDIN_FILENO, 0, &originalTermios);
+    pong::terminal::showCursor();
+    pong::terminal::resetColor();
 }
 
 void InputHandler::prepareForMenuInput()
 {
-    stopChatMode();   // Disables non-blocking
+    if (chatMode)
+        stopChatMode();
+
     disableRawMode(); // Canonical + echo
     terminal::showCursor();
 
-    std::cin.clear();
-    if (std::cin.rdbuf()->in_avail() > 0)
+    // Flush any pending input
+    tcflush(STDIN_FILENO, TCIFLUSH);
+
+    // Ensure stdin is reopened if it was closed
+    if (std::cin.eof() || std::cin.fail())
     {
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        // std::cout << "reopening stdin\n ";
+        static std::ifstream tty("/dev/tty");
+        std::cin.rdbuf(tty.rdbuf());
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     }
+    std::cin.clear();
+
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+
+    char discard;
+    // int flushed = 0;
+
+    while (read(STDIN_FILENO, &discard, 1) > 0)
+    {
+        // flushed++;
+    }
+    // std::cout << "[DEBUG] Flushed " << flushed << " bytes from stdin\n";
+
+    fcntl(STDIN_FILENO, F_SETFL, flags); // Reset flags
 }
 
 bool InputHandler::initialize()
@@ -82,9 +106,6 @@ void InputHandler::enableRawMode()
 
 void InputHandler::disableRawMode()
 {
-    if (!rawModeEnabled)
-        return;
-
     // Restore original terminal settings
     if (fcntl(STDIN_FILENO, F_GETFL) == -1)
     {

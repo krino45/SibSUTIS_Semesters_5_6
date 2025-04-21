@@ -376,6 +376,7 @@ CMakeFiles/pong_client.dir/client/input.cpp.o: /home/krino45/Desktop/sem6/NetPro
   /usr/include/c++/13/bits/exception.h \
   /usr/include/c++/13/bits/exception_defines.h \
   /usr/include/c++/13/bits/exception_ptr.h \
+  /usr/include/c++/13/bits/fstream.tcc \
   /usr/include/c++/13/bits/functexcept.h \
   /usr/include/c++/13/bits/functional_hash.h \
   /usr/include/c++/13/bits/hash_bytes.h \
@@ -472,6 +473,7 @@ CMakeFiles/pong_client.dir/client/input.cpp.o: /home/krino45/Desktop/sem6/NetPro
   /usr/include/c++/13/ext/numeric_traits.h \
   /usr/include/c++/13/ext/string_conversions.h \
   /usr/include/c++/13/ext/type_traits.h \
+  /usr/include/c++/13/fstream \
   /usr/include/c++/13/functional \
   /usr/include/c++/13/initializer_list \
   /usr/include/c++/13/iomanip \
@@ -632,8 +634,10 @@ CMakeFiles/pong_client.dir/client/input.cpp.o: /home/krino45/Desktop/sem6/NetPro
   /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/atomic_word.h \
+  /usr/include/x86_64-linux-gnu/c++/13/bits/basic_file.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
+  /usr/include/x86_64-linux-gnu/c++/13/bits/c++io.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_base.h \
@@ -1914,6 +1918,8 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 
 /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/main.cpp:
 
+/usr/include/x86_64-linux-gnu/c++/13/bits/c++io.h:
+
 /usr/include/c++/13/cstring:
 
 /home/krino45/Desktop/sem6/NetProg/kursach/setevoe\ programirovanie/game3/client/input.cpp:
@@ -1947,6 +1953,8 @@ CMakeFiles/pong_client.dir/client/game.cpp.o:
 /usr/include/errno.h:
 
 /usr/include/c++/13/ext/concurrence.h:
+
+/usr/include/c++/13/bits/fstream.tcc:
 
 /usr/include/c++/13/bits/codecvt.h:
 
@@ -2352,6 +2360,8 @@ CMakeFiles/pong_client.dir/client/main.cpp.o:
 
 /usr/include/x86_64-linux-gnu/gnu/stubs-64.h:
 
+/usr/include/c++/13/fstream:
+
 /usr/include/c++/13/bits/exception.h:
 
 /usr/include/c++/13/bits/predefined_ops.h:
@@ -2477,6 +2487,8 @@ CMakeFiles/pong_client.dir/client/input.cpp.o:
 /usr/include/stdint.h:
 
 /usr/include/x86_64-linux-gnu/bits/in.h:
+
+/usr/include/x86_64-linux-gnu/c++/13/bits/basic_file.h:
 
 /usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:
 

@@ -89,6 +89,9 @@ struct GameState
     {
         memset(this, 0, sizeof(GameState));
 
+        player1.score = 0;
+        player2.score = 0;
+
         player1.size = {1.0f, Paddle::HEIGHT};
         player2.size = {1.0f, Paddle::HEIGHT};
         reset(true);
@@ -96,7 +99,7 @@ struct GameState
 
     static constexpr int WIDTH = 80;
     static constexpr int HEIGHT = 20;
-    static constexpr int VICTORY_CONDITION = 8;
+    static constexpr int VICTORY_CONDITION = 2;
     static constexpr float PADDLE_SPEED = 1.75f;
     static constexpr float BALL_BASE_SPEED = 0.2f;
     static constexpr float BALL_SPEED_INCREASE = 0.05f;
@@ -109,9 +112,6 @@ struct GameState
 
     void reset(bool serve_left)
     {
-        player1.score = 0;
-        player2.score = 0;
-
         player1.position = {2.0f, HEIGHT / 2 - player1.size.y / 2};
         player2.position = {WIDTH - 2 - player2.size.x, HEIGHT / 2 - player2.size.y / 2};
 
@@ -125,6 +125,24 @@ struct GameState
     }
     bool update()
     {
+        // Check for scoring
+        if (ball.position.x <= 0)
+        {
+            player2.score++;
+            lastScoringPlayerIsPlayer1 = false;
+            frame++;
+            reset(true);
+            return true;
+        }
+        else if (ball.position.x >= WIDTH - 1)
+        {
+            player1.score++;
+            lastScoringPlayerIsPlayer1 = true;
+            frame++;
+            reset(false);
+            return true;
+        }
+
         // Update ball position
         ball.position = ball.position + ball.velocity;
 
@@ -183,24 +201,6 @@ struct GameState
 
             ball.velocity.x *= ratio;
             ball.velocity.y *= ratio;
-        }
-
-        // Check for scoring
-        if (ball.position.x <= 0 && ball.velocity.x < 0)
-        {
-            player2.score++;
-            lastScoringPlayerIsPlayer1 = false;
-            frame++;
-            reset(true);
-            return true;
-        }
-        else if (ball.position.x >= WIDTH - 1 && ball.velocity.x > 0)
-        {
-            player1.score++;
-            lastScoringPlayerIsPlayer1 = true;
-            frame++;
-            reset(false);
-            return true;
         }
 
         frame++;

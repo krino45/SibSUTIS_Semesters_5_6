@@ -38,8 +38,8 @@ void Game::setOpponentInfo(const ConnectResponse &response)
     }
     ready = true;
 
-    std::cout << "!!!!! Opponent info set: " << opponentName << "@" << opponentAddress << ":udp" << opponentUdpPort
-              << ":tcp" << opponentTcpPort << std::endl;
+    std::cout << "!!!!! Opponent info set: " << opponentName << "(" << response.mmr << ")" << "@" << opponentAddress
+              << ":udp" << opponentUdpPort << ":tcp" << opponentTcpPort << std::endl;
 }
 
 void Game::setIsPlayer1(bool isP1)
@@ -99,9 +99,12 @@ void Game::update()
             int AIScore = gameState.player2.score;
             if (playerScore >= gameState.VICTORY_CONDITION || AIScore >= gameState.VICTORY_CONDITION)
             {
+                std::cout << "WINNING" << std::endl;
+
                 std::string winnerName = (playerScore >= AIScore) ? "P1" : "AI";
+                running = false;
                 renderer.showVictoryScreen(winnerName, playerScore, AIScore);
-                inputHandler.forceQuit();
+                inputHandler.prepareForMenuInput();
             }
         }
     }
@@ -118,8 +121,11 @@ void Game::update()
             if (player1Score >= gameState.VICTORY_CONDITION || player2Score >= gameState.VICTORY_CONDITION)
             {
                 std::string winnerName = (player1Score >= player2Score) ? "P1" : "P2";
+                running = false;
                 renderer.showVictoryScreen(winnerName, player1Score, player2Score);
-                inputHandler.forceQuit();
+                inputHandler.prepareForMenuInput();
+
+                return;
             }
         }
     }

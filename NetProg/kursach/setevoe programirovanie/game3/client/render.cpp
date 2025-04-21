@@ -244,7 +244,7 @@ void Renderer::renderGoalAnimation()
     // drawArena();
 }
 
-void Renderer::showMatchFoundAnimation(const std::string &opponentName)
+void Renderer::showMatchFoundAnimation(const std::string &opponentName, uint32_t mmr)
 {
     if (debug)
         return;
@@ -252,8 +252,7 @@ void Renderer::showMatchFoundAnimation(const std::string &opponentName)
         std::lock_guard<std::recursive_mutex> lock(renderMutex);
         clearScreen();
 
-        // Animated countdown
-        std::string message = "MATCH FOUND: " + opponentName;
+        std::string message = "MATCH FOUND: " + opponentName + "(" + std::to_string(mmr) + ")";
 
         // Flash the message
         for (int i = 0; i < 3; i++)
@@ -355,7 +354,7 @@ void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score
     terminal::setCursor(boxX + (boxWidth - 26) / 2, boxY + 8);
     std::cout << getColoredText("Press any key to continue", 245) << std::flush;
 
-    std::getchar();
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // Reset color
     terminal::resetColor();
@@ -427,7 +426,7 @@ void Renderer::showDisconnectMessage()
     terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
     std::cout << getColoredText(message, 196) << std::flush;
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(3));
 
     // Reset color
     terminal::resetColor();

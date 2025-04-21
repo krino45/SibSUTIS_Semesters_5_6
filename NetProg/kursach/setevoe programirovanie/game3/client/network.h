@@ -30,7 +30,7 @@ class NetworkManager
     ~NetworkManager();
 
     bool connectToServer(const std::string &serverAddress, uint16_t udpPort, uint16_t tcpPort,
-                         const std::string &username, uint32_t mmr);
+                         const std::string &username);
     void sendPlayerInput(uint8_t inputFlags, uint32_t currentFrame);
     bool receiveGameState(GameState &state);
     void startListening();
@@ -65,7 +65,6 @@ class NetworkManager
     uint16_t udpPort;
     uint16_t tcpPort;
     std::string username;
-    uint32_t mmr;
     std::mutex mutex;
     std::mutex callbackMutex;
     std::mutex connectionMutex;
