@@ -120,15 +120,19 @@ void GameInstance::handleVictory()
     if (matchmaker_)
     {
         std::string winnerName;
+        std::string loserName;
         if (victoryEvent.winningPlayer == 1)
         {
             winnerName = matchmaker_->getPlayer1Name();
+            loserName = matchmaker_->getPlayer2Name();
         }
         else
         {
             winnerName = matchmaker_->getPlayer2Name();
+            loserName = matchmaker_->getPlayer1Name();
         }
 
+        matchmaker_->updateMMR(winnerName, loserName);
         strncpy(victoryEvent.winnerName, winnerName.c_str(), sizeof(victoryEvent.winnerName) - 1);
         victoryEvent.winnerName[sizeof(victoryEvent.winnerName) - 1] = '\0';
     }
@@ -144,6 +148,9 @@ void GameInstance::handleVictory()
     }
 
     // Deactivate game
+    matchmaker_->deregisterPlayer(matchmaker_->getPlayer1Name());
+    matchmaker_->deregisterPlayer(matchmaker_->getPlayer2Name());
+
     active_ = false;
 }
 

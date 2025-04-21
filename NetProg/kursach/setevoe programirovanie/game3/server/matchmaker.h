@@ -3,8 +3,11 @@
 #include "../common/network.h"
 #include "game_instance.h"
 #include "game_manager.h"
+#include <fstream>
+#include <map>
 #include <mutex>
 #include <queue>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
@@ -45,6 +48,7 @@ class Matchmaker
 
     // Player management
     uint8_t registerPlayer(const PlayerInfo &player);
+    void deregisterPlayer(const std::string &username);
 
     // Matchmaking logic
     void process();
@@ -56,6 +60,12 @@ class Matchmaker
     std::string getPlayer2Name();
 
     void handlePlayerDisconnect(const std::string &clientId);
+
+    std::unordered_map<std::string, int> mmrMap; // username/mmr
+    const std::string mmrFile = "ratings.csv";
+    void loadMMR();
+    void saveMMR();
+    void updateMMR(const std::string &winner, const std::string &loser);
 
   private:
     // Find a match among waiting players
