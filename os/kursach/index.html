@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chatroom</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            max-width: 50em;
+            margin: 3em auto;
+            padding-left: 1em;
+            padding-right: 1em;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            height: 90%;
+            background: #ffffff;
+            border-radius: 0.5em;
+            box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        #messages {
+            border: 1px solid #ccc;
+            padding: 0.5em;
+            height: 65%;
+            overflow-y: auto;
+            margin-bottom: 1.25em;
+            background: #f9f9f9;
+        }
+        
+        .nickname {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .no-nickname {
+            font-weight: bold;
+            color: #ff66b2; 
+        }
+
+        input,
+        button {
+            padding: 0.5em;
+            font-size: 1em;
+        }
+
+        input {
+            width: 90%;
+            margin-right: 0.5em;
+        }
+
+        button {
+            width: 6.25em;
+            margin-top: 0.5em;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 0.25em;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            height: 2.5em;
+            padding: 0.25em;
+            margin-bottom: 0.5em;
+            background-color: #eef;
+            border-radius: 0.25em;
+            display: flex;
+            justify-content: space-between;  
+            align-items: center;
+        }
+
+        .timestamp {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-left: 0.5em;
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .nickname {
+            font-weight: bold;
+            color: #007bff;
+            margin-right: 0.5em;
+        }
+
+        @media only screen and (max-width: 1080px) and (min-height: 1800px) {
+        
+        h1 {
+            font-size: 4.25em;
+        }
+
+        #messages {
+            height: 60%;
+        }
+
+        .message {
+            height: 2.5em;
+            font-size: 3em;
+        }
+
+        .timestamp {
+            font-size: 0.6em;
+        }
+
+        input, button {
+            font-size: 3em; 
+            padding: 30px;
+        }
+
+        input {
+            width: 95%; 
+            margin: 10px;
+        }
+
+        button {
+            width: 6em;
+        }
+
+    }
+
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Chatroom</h1>
+        <div id="messages"></div>
+        <input id="nickname" placeholder="Enter nickname" maxlength="64" />
+        <br><br>
+        <input id="message" placeholder="Enter message" maxlength="1024"/>
+        <button id="button" type="submit" onclick="sendMessage()">Send</button>
+    </div>
+    <script>
+        let nickname = "";
+        let isAtBottom = true;
+
+        document.getElementById("message").addEventListener("keyup", function (event) {
+            if (event.keyCode === 13) {
+                document.getElementById("button").click();
+            }
+        });
+
+        function checkScrollPosition() {
+            const messagesDiv = document.getElementById('messages');
+            isAtBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop === messagesDiv.clientHeight;
+        }
+        
+        let lastMessageCount = -999; 
+        let fetching = false;
+
+        async function fetchMessages() {
+            if (fetching) {
+                return;
+            }
+            fetching = true;
+
+            const res = await fetch(`/messages?lastMessageCount=${lastMessageCount}`);
+                if (res.status === 204) {
+                console.log("No new messages");
+                fetching = false;
+                setTimeout(fetchMessages, 500);
+                return;
+            }
+
+            const messages = await res.json();
+            const messagesDiv = document.getElementById('messages');
+            const previousScrollHeight = messagesDiv.scrollHeight;
+
+            console.log("Theres new messages");
+
+
+            if (messages.length > lastMessageCount) {
+                    
+                messagesDiv.innerHTML = messages.map(msg => {
+                    const [timestamp, rest] = msg.split('] ');
+                    const [nickname, ...messageParts] = rest.split(':');
+                    let entered_nickname = document.getElementById('nickname').value;
+                    const message = messageParts.join(':'); 
+                    console.warn(entered_nickname);
+                    const nicknameClass = nickname === entered_nickname ? 'nickname' : 'no-nickname';
+
+                    return `<div class="message">
+                    <span class="${nicknameClass}">${nickname || 'Anonymous'}</span>: 
+                    ${message}
+                    <span class="timestamp">${timestamp.slice(1)}</span>
+                </div>`;
+                }).join('');    
+
+
+                checkScrollPosition(); 
+
+                if (isAtBottom) {
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                } else {
+                    const newScrollHeight = messagesDiv.scrollHeight;
+                    messagesDiv.scrollTop = newScrollHeight - previousScrollHeight + messagesDiv.scrollTop;
+                }
+
+                lastMessageCount = messages.length;
+            }
+
+            fetching = false;
+            setTimeout(fetchMessages, 500);
+        }
+
+        
+        
+        async function sendMessage() {
+            nickname = document.getElementById('nickname').value.trim();
+            if (!nickname) {
+                alert("Please set your nickname!");
+                return;
+            }
+            
+            const msg = document.getElementById('message').value.trim();
+            if (!msg) return;
+            
+            const payload = JSON.stringify({ nickname, message: msg });
+            await fetch('/messages', { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' } });
+            document.getElementById('message').value = '';  
+        }
+        
+        fetchMessages();  
+
+        </script>
+</body>
+
+</html>
