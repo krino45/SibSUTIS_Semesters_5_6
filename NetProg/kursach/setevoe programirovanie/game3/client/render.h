@@ -39,26 +39,20 @@ class Renderer
     void showDisconnectMessage();
 
   private:
-    // Previous state for interpolation
     GameState prevState;
     std::recursive_mutex renderMutex;
 
-    // Last rendered ball position for erasing
     int lastBallX, lastBallY;
 
-    // Game area dimensions
     int width, height;
 
-    // Functions to draw game elements
     void drawArena();
     void drawPaddle(const Paddle &paddle, bool erase = false);
     void drawBall(const Ball &ball, bool erase = false);
     void drawChatArea();
 
-    // String formatting helpers
     std::string getColoredText(const std::string &text, int color) const;
 
-    // Interpolate between two states for smooth rendering
     GameState interpolateStates(const GameState &prev, const GameState &current, float alpha);
 
     bool debug = false;

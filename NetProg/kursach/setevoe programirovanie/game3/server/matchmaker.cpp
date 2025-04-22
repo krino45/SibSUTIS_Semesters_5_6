@@ -217,6 +217,7 @@ void Matchmaker::deregisterPlayer(const std::string &username)
     // Extract clientId before erasing
     const std::string clientId = usernameIt->second.clientId;
 
+    std::cout << "Deregestering " << username << std::endl;
     // Erase from both maps (order matters!)
     activePlayersByUsername.erase(usernameIt); // Erase by iterator to avoid rehashing
     activePlayersByClientId.erase(clientId);   // Now safe to erase from the other map
@@ -246,16 +247,16 @@ void Matchmaker::deregisterPlayer(const std::string &username)
     waitingPlayers = tempQueue;
 }
 
-void Matchmaker::handlePlayerDisconnect(const std::string &clientId)
+void Matchmaker::handlePlayerDisconnect(const std::string &clientId, bool updateMMR)
 {
     std::lock_guard<std::mutex> lock(queueMutex);
 
     auto it = activePlayersByClientId.find(clientId);
-    if (it != activePlayersByClientId.end())
+    if (updateMMR && it != activePlayersByClientId.end())
     {
         std::string user = it->second.username;
 
-        // Consider them the loser, find the other player
+        std::cout << "Handling disconnect of " << user << "in Matchmaker" << std::endl;
         std::string winner;
         {
             std::lock_guard<std::mutex> lock(playersMutex);
@@ -267,7 +268,7 @@ void Matchmaker::handlePlayerDisconnect(const std::string &clientId)
 
         if (!winner.empty())
         {
-            updateMMR(winner, user);
+            this->updateMMR(winner, user);
             std::cout << "MMR updated due to disconnect: " << winner << " beat " << user << std::endl;
         }
     }
@@ -275,8 +276,23 @@ void Matchmaker::handlePlayerDisconnect(const std::string &clientId)
     if (it != activePlayersByClientId.end())
     {
         const std::string &username = it->second.username;
-        activePlayersByUsername.erase(username);
-        activePlayersByClientId.erase(clientId);
+        if (activePlayersByUsername.erase(username))
+        {
+            std::cout << "Erased " << username << " from in memory db\n";
+        }
+        else
+        {
+            std::cout << "Didnt erase " << username << " from in memory db\n";
+        }
+
+        if (activePlayersByClientId.erase(clientId))
+        {
+            std::cout << "Erased " << clientId << " from in memory db\n";
+        }
+        else
+        {
+            std::cout << "Didnt erase " << clientId << " from in memory db\n";
+        }
 
         // Check if this was one of the current players
         std::lock_guard<std::mutex> plock(playersMutex);

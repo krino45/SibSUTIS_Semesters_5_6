@@ -15,7 +15,6 @@ Renderer::Renderer() : lastBallX(0), lastBallY(0), width(GameState::WIDTH), heig
 
 Renderer::~Renderer()
 {
-    // Reset terminal on exit
     terminal::showCursor();
     terminal::resetColor();
     std::cout << std::endl;
@@ -23,11 +22,9 @@ Renderer::~Renderer()
 
 bool Renderer::initialize()
 {
-    // Set up terminal
     terminal::clearScreen();
     terminal::hideCursor();
 
-    // Draw initial UI elements
     drawArena();
 
     return true;
@@ -47,7 +44,7 @@ void Renderer::drawArena()
     // Set background color (dark gray)
     std::cout << "\033[48;5;234m" << std::flush;
 
-    // Clear the entire play area first
+    // Clear play area
     for (int y = 1; y <= height; y++)
     {
         terminal::setCursor(1, y);
@@ -69,7 +66,7 @@ void Renderer::drawArena()
         std::cout << "═";
     }
 
-    // Side borders and center line
+    // Side borders
     for (int y = 2; y < height; y++)
     {
         terminal::setCursor(1, y);
@@ -81,7 +78,7 @@ void Renderer::drawArena()
         std::cout << (y % 2 ? "\033[38;5;239m│" : " ");
     }
 
-    // Draw corners
+    // corners
     terminal::setCursor(1, 1);
     std::cout << "╔";
     terminal::setCursor(width, 1);
@@ -95,7 +92,6 @@ void Renderer::drawArena()
     terminal::resetColor();
     std::cout << std::flush;
 
-    // Redraw persistent UI
     renderScore(prevState);
     renderControls();
 }
@@ -109,7 +105,6 @@ void Renderer::drawPaddle(const Paddle &paddle, bool erase)
     const int paddleX = static_cast<int>(paddle.position.x + 0.5f);
     const int paddleY = static_cast<int>(paddle.position.y + 0.5f);
 
-    // Set the appropriate color or erase
     if (erase)
     {
         std::cout << "\033[48;5;234m"; // Background color
@@ -123,7 +118,6 @@ void Renderer::drawPaddle(const Paddle &paddle, bool erase)
         std::cout << "\033[38;5;39m"; // Blue for right paddle
     }
 
-    // Draw the paddle
     for (int i = 0; i < Paddle::HEIGHT; i++)
     {
         terminal::setCursor(paddleX + 1, paddleY + i + 1);
@@ -150,11 +144,9 @@ void Renderer::drawBall(const Ball &ball, bool erase)
         return;
     std::lock_guard<std::recursive_mutex> lock(renderMutex);
 
-    // Round ball position to integer coordinates
     int ballX = static_cast<int>(ball.position.x + 0.5f);
     int ballY = static_cast<int>(ball.position.y + 0.5f);
 
-    // Erase the previous position if different
     if (lastBallX != ballX || lastBallY != ballY)
     {
         terminal::setCursor(lastBallX + 1, lastBallY + 1);
@@ -165,9 +157,8 @@ void Renderer::drawBall(const Ball &ball, bool erase)
     if (!erase)
     {
         terminal::setCursor(ballX + 1, ballY + 1);
-        std::cout << "\033[1;93;48;5;234m◦" << std::flush; // Normal - light yellow, hollow
+        std::cout << "\033[1;93;48;5;234m◦" << std::flush;
 
-        // Remember this position for later erasing
         lastBallX = ballX;
         lastBallY = ballY;
     }
@@ -270,11 +261,9 @@ void Renderer::showMatchFoundAnimation(const std::string &opponentName, uint32_t
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
 
-        // Show message one final time
         terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
         std::cout << getColoredText(message, 226) << std::flush;
 
-        // Countdown animation
         for (int i = 3; i > 0; i--)
         {
             terminal::setCursor(width / 2, height / 2 + 1);
@@ -282,14 +271,12 @@ void Renderer::showMatchFoundAnimation(const std::string &opponentName, uint32_t
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
 
-        // Clear the animation
         for (int y = height / 2 - 3; y <= height / 2 + 3; y++)
         {
             terminal::setCursor(width / 4, y);
             std::cout << std::string(width / 2, ' ') << std::flush;
         }
     }
-    // Re-draw the arena since we might have overwritten parts of it
     drawArena();
 }
 
@@ -309,8 +296,6 @@ void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score
     // Draw box
     std::cout << "\033[38;5;220m"; // Gold color
 
-    // Using ASCII characters instead of Unicode box drawing characters
-    // Top border
     terminal::setCursor(boxX, boxY);
     std::cout << "+";
     for (int i = 0; i < boxWidth - 2; i++)
@@ -350,10 +335,6 @@ void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score
     terminal::setCursor(boxX + (boxWidth - 15) / 2, boxY + 6);
     std::cout << getColoredText(std::to_string(player1Score) + " - " + std::to_string(player2Score), 255);
 
-    // Press any key to continue
-    terminal::setCursor(boxX + (boxWidth - 26) / 2, boxY + 8);
-    std::cout << getColoredText("Press any key to continue", 245) << std::flush;
-
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // Reset color
@@ -366,7 +347,6 @@ void Renderer::showDisconnectMessage()
         return;
     std::lock_guard<std::recursive_mutex> lock(renderMutex);
 
-    // Create a box in the middle of the screen
     int boxWidth = 30;
     int boxHeight = 5;
     int boxX = (width - boxWidth) / 2;
@@ -407,7 +387,6 @@ void Renderer::showDisconnectMessage()
     terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
     std::cout << getColoredText(message, 196) << std::flush; // Red text
 
-    // Animation: Flash the message a few times
     for (int i = 0; i < 5; i++)
     {
         terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
@@ -422,7 +401,6 @@ void Renderer::showDisconnectMessage()
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
 
-    // Show message one final time
     terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
     std::cout << getColoredText(message, 196) << std::flush;
 

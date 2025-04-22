@@ -1,4 +1,234 @@
-chat related code:
+// client/game.cpp
+#include "game.h"
+#include "../common/utils.h"
+#include <chrono>
+#include <iostream>
+#include <thread>
+
+namespace pong
+{
+
+Game::Game(InputHandler &inputHandler, Renderer &renderer, NetworkManager &networkManager)
+    : inputHandler(inputHandler), renderer(renderer), networkManager(networkManager), gameMode(GameMode::LOCAL),
+      isPlayer1(true), running(false), ready(false), currentInput(0), udpPort(-1), tcpPort(-1)
+{
+    gameState.reset(rand() % 2 == 0);
+}
+
+Game::~Game()
+{
+}
+
+void Game::setGameMode(GameMode mode)
+{
+    gameMode = mode;
+}
+
+void Game::setOpponentInfo(const ConnectResponse &response)
+{
+    opponentName = response.opponentName;
+    opponentAddress = response.hostAddress;
+    opponentUdpPort = std::to_string(response.hostUdpPort);
+    opponentTcpPort = std::to_string(response.hostTcpPort);
+    if (opponentName == "" && opponentAddress == "" && opponentTcpPort == "0" && opponentUdpPort == "0")
+    {
+        ready = false;
+        running = false;
+        return;
+    }
+    ready = true;
+
+    std::cout << "!!!!! Opponent info set: " << opponentName << "(" << response.mmr << ")" << "@" << opponentAddress
+              << ":udp" << opponentUdpPort << ":tcp" << opponentTcpPort << std::endl;
+}
+
+void Game::setIsPlayer1(bool isP1)
+{
+    isPlayer1 = isP1;
+}
+
+void Game::start()
+{
+    inputHandler.enableRawMode();
+    running = true;
+    gameState.reset(rand() % 2 == 0);
+
+    auto lastFrameTime = std::chrono::steady_clock::now();
+    const std::chrono::milliseconds frameTime(16); // ~60 FPS
+
+    while (running)
+    {
+        auto currentTime = std::chrono::steady_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastFrameTime);
+
+        if (elapsedTime >= frameTime)
+        {
+            update();
+            renderer.renderGameState(gameState);
+            lastFrameTime = currentTime;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+}
+
+void Game::update()
+{
+    handleInput();
+
+    if (gameMode == GameMode::ONLINE)
+    {
+        networkManager.sendPlayerInput(currentInput, gameState.frame);
+
+        // Receive and apply game state from server
+        GameState receivedState;
+        if (networkManager.receiveGameState(receivedState))
+        {
+            gameState = receivedState;
+        }
+    }
+    else if (gameMode == LOCAL)
+    {
+        updatePlayerPaddle(currentInput);
+        updateAI();
+        if (gameState.update())
+        {
+            renderer.renderGoalAnimation();
+
+            int playerScore = gameState.player1.score;
+            int AIScore = gameState.player2.score;
+            if (playerScore >= gameState.VICTORY_CONDITION || AIScore >= gameState.VICTORY_CONDITION)
+            {
+                std::cout << "WINNING" << std::endl;
+
+                std::string winnerName = (playerScore >= AIScore) ? "P1" : "AI";
+                running = false;
+                renderer.showVictoryScreen(winnerName, playerScore, AIScore);
+                inputHandler.prepareForMenuInput();
+            }
+        }
+    }
+    else if (gameMode == LOCALMULTIPLAYER)
+    {
+        updatePlayer1Paddle(currentInput);
+        updatePlayer2Paddle(currentInput);
+        if (gameState.update())
+        {
+            renderer.renderGoalAnimation();
+
+            int player1Score = gameState.player1.score;
+            int player2Score = gameState.player2.score;
+            if (player1Score >= gameState.VICTORY_CONDITION || player2Score >= gameState.VICTORY_CONDITION)
+            {
+                std::string winnerName = (player1Score >= player2Score) ? "P1" : "P2";
+                running = false;
+                renderer.showVictoryScreen(winnerName, player1Score, player2Score);
+                inputHandler.prepareForMenuInput();
+
+                return;
+            }
+        }
+    }
+}
+
+const GameState &Game::getGameState() const
+{
+    return gameState;
+}
+
+void Game::handleInput()
+{
+    uint8_t input = inputHandler.poll();
+
+    if (input & InputFlags::QUIT)
+    {
+        running = false;
+    }
+
+    currentInput = input;
+}
+
+void Game::updatePlayerPaddle(uint8_t input)
+{
+    if (input & InputFlags::UP || input & InputFlags::ARROW_UP)
+    {
+        if (gameState.player1.position.y > 1)
+        {
+            gameState.player1.position.y -= 1;
+        }
+    }
+    if (input & InputFlags::DOWN || input & InputFlags::ARROW_DOWN)
+    {
+        if (gameState.player1.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
+        {
+            gameState.player1.position.y += 1;
+        }
+    }
+}
+
+void Game::updatePlayer1Paddle(uint8_t input)
+{
+    if (input & InputFlags::UP)
+    {
+        if (gameState.player1.position.y > 1)
+        {
+            gameState.player1.position.y -= 1;
+        }
+    }
+    if (input & InputFlags::DOWN)
+    {
+        if (gameState.player1.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
+        {
+            gameState.player1.position.y += 1;
+        }
+    }
+}
+
+void Game::updatePlayer2Paddle(uint8_t input)
+{
+    if (input & InputFlags::ARROW_UP)
+    {
+        if (gameState.player2.position.y > 1)
+        {
+            gameState.player2.position.y -= 1;
+        }
+    }
+    if (input & InputFlags::ARROW_DOWN)
+    {
+        if (gameState.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
+        {
+            gameState.player2.position.y += 1;
+        }
+    }
+}
+
+void Game::updateAI()
+{
+    // Simple AI: follow the ball
+    const float centerOfPaddle = gameState.player2.position.y + Paddle::HEIGHT / 2.0f;
+    const float ballY = gameState.ball.position.y;
+
+    // Only move if the ball is coming towards the AI
+    if (gameState.ball.velocity.x > 0)
+    {
+        if (ballY < centerOfPaddle - 1.0f)
+        {
+            // Move up
+            if (gameState.player2.position.y > 1)
+            {
+                gameState.player2.position.y -= 0.15f;
+            }
+        }
+        else if (ballY > centerOfPaddle + 1.0f)
+        {
+            // Move down
+            if (gameState.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
+            {
+                gameState.player2.position.y += 0.15f;
+            }
+        }
+    }
+}
 
 void Game::toggleChat()
 {
@@ -13,7 +243,15 @@ void Game::toggleChat()
         if (!message.empty())
         {
             networkManager.sendChatMessage(message);
-            addChatMessage("You", message);
+            ChatMessageData cm;
+            std::string name = "You";
+            strncpy(cm.content, message.data(), message.size());
+            cm.contentLength = message.size();
+            strncpy(cm.sender, name.data(), name.size());
+            auto now = std::chrono::system_clock::now();
+            cm.timestamp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+
+            addChatMessage(cm);
             renderer.renderChatMessages(getChatMessages());
         }
         chatActive = false;
@@ -21,19 +259,12 @@ void Game::toggleChat()
     }).detach();
 }
 
-void Game::addChatMessage(const std::string &sender, const std::string &message)
+void Game::addChatMessage(const ChatMessageData message)
 {
-    // Create a new chat message
-    ChatMessageData chatMsg;
-    strncpy(chatMsg.sender, sender.c_str(), sizeof(chatMsg.sender) - 1);
-    chatMsg.sender[sizeof(chatMsg.sender) - 1] = '\0';
-    strncpy(chatMsg.content, message.c_str(), sizeof(chatMsg.content) - 1);
-    chatMsg.content[sizeof(chatMsg.content) - 1] = '\0';
-    chatMsg.timestamp = static_cast<uint32_t>(time(nullptr));
-    chatMsg.contentLength = message.length();
+    std::cout << "NEW CHAT MESSAGE: " << message.sender << ":" << message.content << std::endl;
 
     // Add to the chat messages vector
-    chatMessages.push_back(chatMsg);
+    chatMessages.push_back(message);
 
     // Limit the number of messages to display (keep the most recent ones)
     const size_t MAX_MESSAGES = 5;
@@ -47,8 +278,212 @@ const std::vector<ChatMessageData> &Game::getChatMessages() const
 {
     return chatMessages;
 }
+} // namespace pong
 
-// also refactor the following ones to use terminal:: namespace
+// client/input.cpp
+#include "input.h"
+#include "../common/utils.h"
+#include <cstring>
+#include <fstream>
+#include <iostream>
+
+namespace pong
+{
+InputHandler *InputHandler::globalInputHandler = nullptr;
+
+void restoreTerminal()
+{
+    if (InputHandler::globalInputHandler)
+    {
+        InputHandler::globalInputHandler->disableRawMode();
+        pong::terminal::showCursor();
+        pong::terminal::resetColor();
+        std::cout << std::endl;
+    }
+}
+
+InputHandler::InputHandler() : rawModeEnabled(false), chatMode(false), forcedQuit(false)
+{
+    // Store the original terminal settings
+    tcgetattr(STDIN_FILENO, &originalTermios);
+    globalInputHandler = this;
+}
+
+InputHandler::~InputHandler()
+{
+    tcsetattr(STDIN_FILENO, 0, &originalTermios);
+    pong::terminal::showCursor();
+    pong::terminal::resetColor();
+}
+
+void InputHandler::prepareForMenuInput()
+{
+    if (chatMode)
+        stopChatMode();
+
+    disableRawMode(); // Canonical + echo
+    terminal::showCursor();
+
+    // Flush any pending input
+    tcflush(STDIN_FILENO, TCIFLUSH);
+
+    // Ensure stdin is reopened if it was closed
+    if (std::cin.eof() || std::cin.fail())
+    {
+        // std::cout << "reopening stdin\n ";
+        static std::ifstream tty("/dev/tty");
+        std::cin.rdbuf(tty.rdbuf());
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    }
+    std::cin.clear();
+
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+
+    char discard;
+    // int flushed = 0;
+
+    while (read(STDIN_FILENO, &discard, 1) > 0)
+    {
+        // flushed++;
+    }
+    // std::cout << "[DEBUG] Flushed " << flushed << " bytes from stdin\n";
+
+    fcntl(STDIN_FILENO, F_SETFL, flags); // Reset flags
+}
+
+bool InputHandler::initialize()
+{
+    enableRawMode();
+    return rawModeEnabled;
+}
+
+void InputHandler::enableRawMode()
+{
+    // Get current terminal settings
+    struct termios raw;
+    tcgetattr(STDIN_FILENO, &raw);
+
+    // Turn off echoing and canonical mode
+    raw.c_lflag &= ~(ECHO | ICANON);
+
+    // Set minimum chars and timeout
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 0;
+
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ enableRawMode, skipping terminal ops" << std::endl;
+        return;
+    }
+    // Apply settings
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+
+    // Set stdin to non-blocking mode
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+
+    rawModeEnabled = true;
+}
+
+void InputHandler::disableRawMode()
+{
+    // Restore original terminal settings
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ disableRawMode, skipping terminal ops" << std::endl;
+        return;
+    }
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &originalTermios);
+
+    // Reset non-blocking mode
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags & ~O_NONBLOCK);
+
+    rawModeEnabled = false;
+}
+
+bool InputHandler::hasInput()
+{
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+
+    // Zero timeout for polling
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+
+    return select(1, &readfds, NULL, NULL, &timeout) > 0;
+}
+
+char InputHandler::readChar()
+{
+    char c = 0;
+    if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN)
+    {
+        perror("read");
+    }
+    return c;
+}
+
+uint8_t InputHandler::poll()
+{
+    if (forcedQuit)
+    {
+        forcedQuit = false;
+        return 0 | InputFlags::QUIT;
+    }
+
+    if (chatMode)
+        return InputFlags::NONE;
+
+    uint8_t input = InputFlags::NONE;
+
+    while (hasInput())
+    {
+        char c = readChar();
+
+        // Handle quit
+        if (c == 'q' || c == 'Q')
+        {
+            input |= InputFlags::QUIT;
+            if (quitCallback)
+                quitCallback();
+        }
+
+        // Handle paddle movement
+        if (c == 'w' || c == 'W')
+            input |= InputFlags::UP;
+        if (c == 's' || c == 'S')
+            input |= InputFlags::DOWN;
+
+        // Handle arrow keys (3-byte sequences)
+        if (c == '\033')
+        {
+            char seq[2];
+            if (read(STDIN_FILENO, &seq[0], 1) != -1 && read(STDIN_FILENO, &seq[1], 1) != -1)
+            {
+                if (seq[0] == '[')
+                {
+                    if (seq[1] == 'A')
+                        input |= InputFlags::ARROW_UP; // Up arrow
+                    if (seq[1] == 'B')
+                        input |= InputFlags::ARROW_DOWN; // Down arrow
+                }
+            }
+        }
+
+        // Handle chat activation
+        if (c == 't' || c == 'T')
+        {
+            if (chatCallback)
+                chatCallback();
+        }
+    }
+
+    return input;
+}
 
 void InputHandler::startChatMode()
 {
@@ -83,64 +518,223 @@ std::string InputHandler::getChatInput()
     disableRawMode();
     terminal::showCursor();
     newt.c_lflag |= (ECHO | ICANON);
+
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ getChatInput, skipping terminal ops" << std::endl;
+        return "";
+    }
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     // Get the input
     std::string input;
     std::getline(std::cin, input);
 
+    if (fcntl(STDIN_FILENO, F_GETFL) == -1)
+    {
+        std::cerr << "[WARN] STDIN_FILENO invalid @ getChatInput, skipping terminal ops" << std::endl;
+        return "";
+    }
     // Restore raw mode settings
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
     // Return the input
     return input;
 }
-        networkManager.onMatchFound = [&](const pong::ConnectResponse &response) {
-            game->setOpponentInfo(response);
-            if (response.isPlayer1)
+
+} // namespace pong
+
+// client/main.cpp
+#include "../common/game_state.h"
+#include "../common/network.h"
+#include "../common/utils.h"
+#include "game.h"
+#include "input.h"
+#include "network.h"
+#include "render.h"
+#include <iostream>
+#include <signal.h>
+#include <thread>
+
+volatile bool running = true;
+
+// Signal handler
+void signalHandler(int signal)
+{
+    std::cout << "Received interrupt / termination signal. Exiting..." << std::endl;
+    if (!running)
+    {
+        pong::restoreTerminal();
+        std::exit(1);
+    }
+    running = false;
+}
+
+int main()
+{
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
+
+    while (running)
+    {
+        pong::InputHandler inputHandler;
+        pong::Renderer renderer;
+        pong::NetworkManager networkManager;
+
+        auto game = std::make_shared<pong::Game>(inputHandler, renderer, networkManager);
+
+        // Rest of initialization...
+        srand(time(NULL));
+
+        if (!inputHandler.initialize() || !renderer.initialize())
+        {
+            std::cerr << "Failed to initialize input or renderer." << std::endl;
+            return 1;
+        }
+
+        std::cout << "\nPONG GAME" << std::endl;
+        std::cout << "1. Single Player" << std::endl;
+        std::cout << "2. Local multiplayer" << std::endl;
+        std::cout << "3. Multiplayer (Host)" << std::endl;
+        std::cout << "4. Multiplayer (Join)" << std::endl;
+        std::cout << "9. (Q)uit" << std::endl;
+        std::cout << "Select mode: ";
+
+        std::string choice;
+
+        inputHandler.prepareForMenuInput();
+
+        if (!std::getline(std::cin, choice))
+        {
+            if (std::cin.eof())
             {
-                networkManager.startChatServer(game->tcpPort);
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                continue;
             }
             else
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                networkManager.connectToChat(response.hostAddress, response.hostTcpPort);
+                std::cerr << "Unknown std_in error\n";
             }
-            // std::cout << "\n\nDebug: " << response.hostAddress << response.hostTcpPort << response.hostUdpPort
-            //   << response.opponentName << response.success << response.isPlayer1 << std::flush;
+        }
+        // std::cout << "[DEBUG] User entered: \"" << choice << "\"" << std::endl;
 
-            renderer.initializeChatArea(response.opponentName);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            game->getRenderer().showMatchFoundAnimation(response.opponentName);
-        };
+        if (choice == "1")
+        {
+            game->setGameMode(pong::GameMode::LOCAL);
+        }
+        else if (choice == "2")
+        {
+            game->setGameMode(pong::GameMode::LOCALMULTIPLAYER);
+        }
+        else if (choice == "3" || choice == "4")
+        {
+            // Multiplayer mode
+            game->setGameMode(pong::GameMode::ONLINE);
 
-        networkManager.onScoreEvent = [game](const pong::ScoreEvent &event) {
-            game->getRenderer().renderGoalAnimation();
-        };
+            std::string serverAddress;
+            std::string username;
 
-        networkManager.onVictoryEvent = [game](const pong::VictoryEvent &event) {
-            game->getInputHandler().disableRawMode();
-            game->getRenderer().showVictoryScreen(event.winnerName, event.player1Score, event.player2Score);
-            game->getInputHandler().forceQuit();
-            pong::ConnectResponse empty{};
-            game->setOpponentInfo(empty);
-        };
+            std::cout << "Enter username: ";
+            std::getline(std::cin, username);
 
-        networkManager.onDisconnectEvent = [&]() {
-            pong::ConnectResponse empty{};
-            game->getRenderer().showDisconnectMessage();
-            game->setOpponentInfo(empty);
-            game->getInputHandler().forceQuit();
-            networkManager.stopChat();
-        };
+            std::cout << "Enter server address: ";
+            std::getline(std::cin, serverAddress);
+            if (serverAddress.size() <= 0)
+            {
+                serverAddress = "127.0.0.1";
+            }
 
-        networkManager.onChatMessage = [&](const pong::ChatMessageData &message) {
-            game->addChatMessage(message.sender, message.content);
-            renderer.renderChatMessages(game->getChatMessages());
-        };
+            if (choice == "3")
+                game->setIsPlayer1(true);
+            else
+                game->setIsPlayer1(false);
 
-        while (choice != "1" && choice != "2")
+            game->udpPort = 8081 + rand() % 1000;
+            game->tcpPort = 8082 + rand() % 1000;
+            while (game->udpPort == game->tcpPort)
+            {
+                game->tcpPort = 8082 + rand() % 1000; // Making sure they dont match
+            }
+            if (!networkManager.connectToServer(serverAddress, game->udpPort, game->tcpPort, username))
+            {
+                std::cerr << "Failed to connect to server." << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                pong::terminal::clearScreen();
+
+                if (!running)
+                {
+                    break;
+                }
+                continue;
+            }
+
+            inputHandler.setChatCallback([&game]() { game->toggleChat(); });
+            inputHandler.setQuitCallback([&]() {
+                networkManager.stopChat();
+                pong::ConnectResponse empty{};
+                game->setOpponentInfo(empty);
+                game->running = false;
+            });
+
+            networkManager.onMatchFound = [&](const pong::ConnectResponse &response) {
+                game->setOpponentInfo(response);
+                if (response.isPlayer1)
+                {
+                    networkManager.startChatServer(game->tcpPort);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    networkManager.connectToChat(response.hostAddress, response.hostTcpPort);
+                }
+                // std::cout << "\n\nDebug: " << response.hostAddress << response.hostTcpPort << response.hostUdpPort
+                //   << response.opponentName << response.success << response.isPlayer1 << std::flush;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(400));
+                renderer.initializeChatArea(response.opponentName);
+
+                game->getRenderer().showMatchFoundAnimation(response.opponentName, response.mmr);
+            };
+
+            networkManager.onScoreEvent = [game](const pong::ScoreEvent &event) {
+                game->getRenderer().renderGoalAnimation();
+            };
+
+            networkManager.onVictoryEvent = [&](const pong::VictoryEvent &event) {
+                game->getRenderer().showVictoryScreen(event.winnerName, event.player1Score, event.player2Score);
+                game->running = false;
+            };
+
+            networkManager.onDisconnectEvent = [&]() {
+                game->getRenderer().showDisconnectMessage();
+                game->running = false;
+            };
+
+            networkManager.onChatMessage = [&](const pong::ChatMessageData &message) {
+                game->addChatMessage(message);
+                renderer.renderChatMessages(game->getChatMessages());
+            };
+            std::cout << "Connected to server. Waiting for game to start..." << std::endl;
+        }
+        else if (choice == "9" || choice == "q" || choice == "Q")
+        {
+            running = false;
+            continue;
+        }
+        else
+        {
+            std::cerr << "Invalid choice." << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            pong::terminal::clearScreen();
+
+            if (!running)
+            {
+                break;
+            }
+            continue;
+        }
+
+        while (choice != "1" && choice != "2" && running)
         {
             networkManager.processCallbacks();
             if (game->ready)
@@ -152,17 +746,22 @@ std::string InputHandler::getChatInput()
 
         renderer.initialize();
         game->start();
-        game->running = true;
-
-        // Main game loop using the same instance
-        while (game->running)
-        {
-            game->update();
-            renderer.renderGameState(game->getGameState());
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        }
+        networkManager.stopChat();
     }
+
     return 0;
+}
+
+// client/network.cpp
+
+#include "network.h"
+
+namespace pong
+{
+
+NetworkManager::NetworkManager()
+    : udpSocket(-1), tcpSocket(-1), hasPendingResponse(false), pendingResponse({}), chatClientSocket(-1)
+{
 }
 
 NetworkManager::~NetworkManager()
@@ -170,18 +769,18 @@ NetworkManager::~NetworkManager()
     running = false;
 
     // Force wakeup the network thread if it's blocked in recvfrom
-    if (udpSocket != -1)
+    if (udpSocket != -1 && udpSocket != 0)
     {
         shutdown(udpSocket, SHUT_RDWR);
-
-        // Send a dummy packet to unblock recvfrom
         if (serverAddr.sin_port != 0)
-        { // If we have a server address
+        {
             sendto(udpSocket, "", 0, 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
         }
+        close(udpSocket);
+        udpSocket = -1;
     }
 
-    if (tcpSocket != -1)
+    if (tcpSocket != -1 && udpSocket != 0)
     {
         shutdown(tcpSocket, SHUT_RDWR);
         close(tcpSocket);
@@ -197,12 +796,340 @@ NetworkManager::~NetworkManager()
     {
         chatThread.join();
     }
+}
 
-    if (udpSocket != -1)
+bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t udpPort, uint16_t tcpPort,
+                                     const std::string &username)
+{
+    this->serverAddress = serverAddress;
+    this->udpPort = udpPort;
+    this->username = username;
+
+    // Create UDP socket
+    udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udpSocket == -1)
     {
-        close(udpSocket);
-        udpSocket = -1;
+        perror("udp socket");
+        return false;
     }
+
+    // Bind UDP socket to receive messages
+    sockaddr_in clientAddr{};
+    clientAddr.sin_family = AF_INET;
+    clientAddr.sin_port = htons(udpPort);
+    clientAddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(udpSocket, (struct sockaddr *)&clientAddr, sizeof(clientAddr)) < 0)
+    {
+        perror("udp bind");
+        close(udpSocket);
+        return false;
+    }
+
+    // Set up server address for sending
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(UDP_SERVER_PORT);
+
+    if (inet_pton(AF_INET, serverAddress.c_str(), &serverAddr.sin_addr) <= 0)
+    {
+        std::cerr << "Invalid server address: " << serverAddress << std::endl;
+        close(udpSocket);
+        return false;
+    }
+
+    // Prepare connection request
+    ConnectRequest request;
+    strncpy(request.username, username.c_str(), sizeof(request.username));
+    request.udpPort = udpPort;
+    request.tcpPort = tcpPort; // For direct player-to-player chat
+    request.mmr = 69;          // unneeded
+
+    std::vector<uint8_t> packet = createPacket(MessageType::CONNECT_REQUEST, 0, &request, sizeof(request));
+
+    if (sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) !=
+        packet.size())
+    {
+        perror("sendto");
+        close(udpSocket);
+        return false;
+    }
+
+    connectionSuccess = false;
+    bool connectionDeclined = false;
+    running = true;
+    std::thread connectionThread([&]() {
+        fd_set readSet;
+        struct timeval timeout;
+
+        FD_ZERO(&readSet);
+        FD_SET(udpSocket, &readSet);
+
+        timeout.tv_sec = 5;
+        timeout.tv_usec = 0;
+
+        int result = select(udpSocket + 1, &readSet, NULL, NULL, &timeout);
+
+        if (result > 0 && FD_ISSET(udpSocket, &readSet))
+        {
+            std::vector<uint8_t> buffer(1024);
+            sockaddr_in fromAddr;
+            socklen_t fromLen = sizeof(fromAddr);
+
+            ssize_t bytesReceived =
+                recvfrom(udpSocket, buffer.data(), buffer.size(), 0, (struct sockaddr *)&fromAddr, &fromLen);
+
+            if (bytesReceived > sizeof(NetworkHeader))
+            {
+                NetworkHeader *header = reinterpret_cast<NetworkHeader *>(buffer.data());
+
+                if (header->type == MessageType::CONNECT_RESPONSE &&
+                    bytesReceived >= sizeof(NetworkHeader) + sizeof(ConnectResponse))
+                {
+                    ConnectResponse *response =
+                        reinterpret_cast<ConnectResponse *>(buffer.data() + sizeof(NetworkHeader));
+
+                    if (response->success)
+                    {
+                        std::lock_guard<std::mutex> lock(connectionMutex);
+                        isPlayer1 = response->isPlayer1;
+                        serverAddr = fromAddr;
+                        connectionSuccess = true;
+
+                        std::cout << "Successfully connected to server" << std::endl;
+                        if (onMatchFound)
+                            onMatchFound(*response);
+                    }
+                    else
+                    {
+                        connectionDeclined = true;
+                    }
+                    connectionCV.notify_one();
+                }
+            }
+        }
+
+        startListening(); // Continue game packet listening
+    });
+    connectionThread.detach();
+
+    {
+        std::unique_lock<std::mutex> lock(connectionMutex);
+        connectionCV.wait_for(lock, std::chrono::seconds(5), [this]() { return connectionSuccess; });
+    }
+
+    if (connectionDeclined)
+    {
+        std::cerr << "Connection declined by server (are you already logged in?)" << std::endl;
+        return false;
+    }
+
+    if (!connectionSuccess)
+    {
+        std::cerr << "Connection to server failed or timed out" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+void NetworkManager::startListening()
+{
+    listenThread = std::thread([this]() {
+        while (running)
+        {
+            std::vector<uint8_t> packet = receivePacket();
+            if (!packet.empty())
+            {
+                handlePacket(packet);
+            }
+        }
+    });
+}
+
+void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
+{
+    if (packet.size() < sizeof(NetworkHeader))
+        return;
+
+    NetworkHeader *header = (NetworkHeader *)packet.data();
+
+    switch (header->type)
+    {
+    case MessageType::CONNECT_RESPONSE: {
+        const ConnectResponse *response =
+            reinterpret_cast<const ConnectResponse *>(packet.data() + sizeof(NetworkHeader));
+
+        std::cout << "[MATCHMAKING] Opponent: " << response->opponentName << "(" << response->mmr << ")" << std::endl;
+        std::cout << "Address: " << response->hostAddress << ", UDP: " << response->hostUdpPort
+                  << ", TCP: " << response->hostTcpPort << std::endl;
+        std::cout << "You are player " << (response->isPlayer1 ? "1" : "2") << std::endl;
+        isPlayer1 = response->isPlayer1;
+
+        // Store data / notify game
+        std::lock_guard<std::mutex> lock(callbackMutex);
+        pendingResponse = *response;
+        hasPendingResponse = true;
+
+        break;
+    }
+
+    case MessageType::GAME_STATE_UPDATE: {
+        if (packet.size() >= sizeof(NetworkHeader) + sizeof(GameState))
+        {
+            // Parse game state and update the local game state
+            GameState state;
+            if (state.deserialize(std::vector<uint8_t>(packet.begin() + sizeof(NetworkHeader), packet.end())))
+            {
+                std::lock_guard<std::mutex> lock(gameStateMutex);
+                latestGameState = state;
+                gameStateUpdated = true;
+            }
+        }
+        break;
+    }
+
+    case MessageType::SCORE_EVENT: {
+        if (packet.size() >= sizeof(NetworkHeader) + sizeof(ScoreEvent))
+        {
+            const ScoreEvent *event = reinterpret_cast<const ScoreEvent *>(packet.data() + sizeof(NetworkHeader));
+
+            // Notify game to render goal animation
+            if (onScoreEvent)
+            {
+                onScoreEvent(*event);
+            }
+        }
+        else
+        {
+            std::cerr << "want: >=" << sizeof(NetworkHeader) + sizeof(ScoreEvent) << ", got: " << packet.size()
+                      << std::endl;
+        }
+        break;
+    }
+
+    case MessageType::VICTORY_EVENT: {
+
+        if (packet.size() >= sizeof(NetworkHeader) + sizeof(VictoryEvent))
+        {
+            const VictoryEvent *event = reinterpret_cast<const VictoryEvent *>(packet.data() + sizeof(NetworkHeader));
+
+            // Notify game to show victory screen
+            if (onVictoryEvent)
+            {
+                onVictoryEvent(*event);
+            }
+        }
+        else
+        {
+            std::cerr << "want: >=" << sizeof(NetworkHeader) + sizeof(VictoryEvent) << ", got: " << packet.size()
+                      << std::endl;
+        }
+        break;
+    }
+
+    case MessageType::DISCONNECT_EVENT: {
+        if (onDisconnectEvent)
+        {
+            onDisconnectEvent();
+        }
+        break;
+    }
+
+    default:
+        std::cerr << "Unknown message type: " << static_cast<int>(header->type) << "\n";
+        break;
+    }
+}
+
+void NetworkManager::sendPlayerInput(uint8_t inputFlags, uint32_t currentFrame)
+{
+    PlayerInput input;
+    input.playerId = isPlayer1 ? 1 : 2;
+    input.flags = inputFlags;
+    input.frameNumber = currentFrame;
+
+    if (input.flags == 0)
+    {
+        return;
+    }
+
+    std::vector<uint8_t> packet = createInputPacket(input);
+
+    if (sendto(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) !=
+        packet.size())
+    {
+        std::cerr << "Failed to send input packet" << std::endl;
+    }
+}
+
+bool NetworkManager::receiveGameState(GameState &state)
+{
+    std::lock_guard<std::mutex> lock(gameStateMutex);
+    state = latestGameState;
+    bool updated = gameStateUpdated;
+    gameStateUpdated = false;
+    return true;
+}
+
+std::vector<uint8_t> NetworkManager::receivePacket()
+{
+    std::vector<uint8_t> packet(MAX_PACKET_SIZE);
+    sockaddr_in addr;
+    socklen_t addrlen = sizeof(addr);
+
+    int bytesReceived = recvfrom(udpSocket, packet.data(), packet.size(), 0, (struct sockaddr *)&addr, &addrlen);
+    if (bytesReceived < 0)
+    {
+        if (errno == EBADF)
+        {
+            // Socket was closed, this is expected during shutdown
+            return {};
+        }
+        // Don't print error for EWOULDBLOCK or EAGAIN (non-blocking socket)
+        if (errno != EWOULDBLOCK && errno != EAGAIN)
+        {
+            perror("recvfrom");
+        }
+        return {};
+    }
+
+    packet.resize(bytesReceived);
+    return packet;
+}
+
+bool NetworkManager::isConnected()
+{
+    return connectionSuccess;
+}
+void NetworkManager::processCallbacks()
+{
+    std::lock_guard<std::mutex> lock(callbackMutex);
+
+    // Make a local copy of the response to ensure thread safety
+    ConnectResponse response;
+    bool shouldProcess = false;
+
+    if (hasPendingResponse)
+    {
+        // Copy all fields explicitly to avoid padding issues
+        response.success = pendingResponse.success;
+        response.isPlayer1 = pendingResponse.isPlayer1;
+        response.hostUdpPort = pendingResponse.hostUdpPort;
+        response.hostTcpPort = pendingResponse.hostTcpPort;
+        strncpy(response.hostAddress, pendingResponse.hostAddress, sizeof(response.hostAddress));
+        strncpy(response.opponentName, pendingResponse.opponentName, sizeof(response.opponentName));
+        response.mmr = pendingResponse.mmr;
+
+        shouldProcess = true;
+        hasPendingResponse = false;
+    }
+
+    if (shouldProcess && onMatchFound)
+    {
+        onMatchFound(response);
+    }
+}
+
 bool NetworkManager::startChatServer(uint16_t port)
 {
     tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -236,6 +1163,7 @@ bool NetworkManager::startChatServer(uint16_t port)
         sockaddr_in clientAddr{};
         socklen_t clientLen = sizeof(clientAddr);
         int clientSocket = accept(tcpSocket, (struct sockaddr *)&clientAddr, &clientLen);
+        chatClientSocket = clientSocket;
 
         if (clientSocket < 0)
         {
@@ -243,7 +1171,7 @@ bool NetworkManager::startChatServer(uint16_t port)
             return;
         }
 
-        std::vector<uint8_t> buffer(1024);
+        std::vector<uint8_t> buffer(sizeof(NetworkHeader) + sizeof(ChatMessageData));
         while (chatRunning)
         {
             ssize_t bytes = recv(clientSocket, buffer.data(), buffer.size(), 0);
@@ -251,7 +1179,7 @@ bool NetworkManager::startChatServer(uint16_t port)
             {
                 if (bytes == 0)
                 {
-                    std::cerr << "Connection closed by peer." << std::endl;
+                    // std::cerr << "Connection closed by peer." << std::endl;
                 }
                 else
                 {
@@ -261,8 +1189,15 @@ bool NetworkManager::startChatServer(uint16_t port)
             }
 
             std::lock_guard<std::mutex> lock(chatMutex);
-            ChatMessageData *message = reinterpret_cast<ChatMessageData *>(buffer.data());
+
+            const NetworkHeader *header = reinterpret_cast<const NetworkHeader *>(buffer.data());
+            ChatMessageData *message = reinterpret_cast<ChatMessageData *>(buffer.data() + sizeof(NetworkHeader));
+
             chatMessages.push_back(*message);
+            if (onChatMessage)
+            {
+                onChatMessage(*message);
+            }
         }
         close(clientSocket);
     });
@@ -293,7 +1228,7 @@ bool NetworkManager::connectToChat(const std::string &address, uint16_t port)
 
     chatRunning = true;
     chatThread = std::thread([this]() {
-        std::vector<uint8_t> buffer(1024);
+        std::vector<uint8_t> buffer(sizeof(NetworkHeader) + sizeof(ChatMessageData));
         while (chatRunning)
         {
             ssize_t bytes = recv(tcpSocket, buffer.data(), buffer.size(), 0);
@@ -301,7 +1236,7 @@ bool NetworkManager::connectToChat(const std::string &address, uint16_t port)
             {
                 if (bytes == 0)
                 {
-                    std::cerr << "Connection closed by peer." << std::endl;
+                    // std::cerr << "Connection closed by peer." << std::endl;
                 }
                 else
                 {
@@ -310,8 +1245,15 @@ bool NetworkManager::connectToChat(const std::string &address, uint16_t port)
                 break;
             }
             std::lock_guard<std::mutex> lock(chatMutex);
-            ChatMessageData *message = reinterpret_cast<ChatMessageData *>(buffer.data());
+
+            const NetworkHeader *header = reinterpret_cast<const NetworkHeader *>(buffer.data());
+            const ChatMessageData *message =
+                reinterpret_cast<const ChatMessageData *>(buffer.data() + sizeof(NetworkHeader));
             chatMessages.push_back(*message);
+            if (onChatMessage)
+            {
+                onChatMessage(*message);
+            }
         }
     });
 
@@ -320,16 +1262,17 @@ bool NetworkManager::connectToChat(const std::string &address, uint16_t port)
 
 void NetworkManager::sendChatMessage(const std::string &message_text)
 {
-    if (tcpSocket != -1)
+    int socket = chatClientSocket != -1 ? chatClientSocket : tcpSocket;
+    if (socket != -1)
     {
         std::vector<uint8_t> packet = createChatPacket(username, message_text);
-        std::cout << "Sending to tcpSocket on " << tcpSocket << "\n" << std::flush;
-        ssize_t bytesSent = send(tcpSocket, packet.data(), packet.size(), MSG_NOSIGNAL);
+        std::cout << "Sending to tcpSocket on " << socket << "\n" << std::flush;
+        ssize_t bytesSent = send(socket, packet.data(), packet.size(), MSG_NOSIGNAL);
         if (bytesSent <= 0)
         {
             if (bytesSent == 0)
             {
-                std::cerr << "Connection closed by peer." << std::endl;
+                // std::cerr << "Connection closed by peer." << std::endl;
             }
             else
             {
@@ -365,8 +1308,190 @@ void NetworkManager::stopChat()
     }
 }
 
+} // namespace pong
+
+// client/render.cpp
+#include "render.h"
+#include "../common/network.h"
+#include "../common/utils.h"
+#include <chrono>
+#include <iomanip>
+#include <thread>
+
+namespace pong
+{
+
+Renderer::Renderer() : lastBallX(0), lastBallY(0), width(GameState::WIDTH), height(GameState::HEIGHT)
+{
+}
+
+Renderer::~Renderer()
+{
+    // Reset terminal on exit
+    terminal::showCursor();
+    terminal::resetColor();
+    std::cout << std::endl;
+}
+
+bool Renderer::initialize()
+{
+    // Set up terminal
+    terminal::clearScreen();
+    terminal::hideCursor();
+
+    // Draw initial UI elements
+    drawArena();
+
+    return true;
+}
+
+void Renderer::clearScreen()
+{
+    if (debug)
+        return;
+    terminal::clearScreen();
+}
+
+void Renderer::drawArena()
+{
+    if (debug)
+        return;
+    // Set background color (dark gray)
+    std::cout << "\033[48;5;234m" << std::flush;
+
+    // Clear the entire play area first
+    for (int y = 1; y <= height; y++)
+    {
+        terminal::setCursor(1, y);
+        for (int x = 0; x < width; x++)
+        {
+            std::cout << " ";
+        }
+    }
+
+    // Draw borders (white)
+    std::cout << "\033[38;5;255m" << std::flush;
+
+    // Top and bottom borders
+    for (int x = 0; x < width; x++)
+    {
+        terminal::setCursor(x + 1, 1);
+        std::cout << "═";
+        terminal::setCursor(x + 1, height);
+        std::cout << "═";
+    }
+
+    // Side borders and center line
+    for (int y = 2; y < height; y++)
+    {
+        terminal::setCursor(1, y);
+        std::cout << "║";
+        terminal::setCursor(width, y);
+        std::cout << "║";
+
+        terminal::setCursor(width / 2 + 1, y);
+        std::cout << (y % 2 ? "\033[38;5;239m│" : " ");
+    }
+
+    // Draw corners
+    terminal::setCursor(1, 1);
+    std::cout << "╔";
+    terminal::setCursor(width, 1);
+    std::cout << "╗";
+    terminal::setCursor(1, height);
+    std::cout << "╚";
+    terminal::setCursor(width, height);
+    std::cout << "╝";
+
+    // Reset colors
+    terminal::resetColor();
+    std::cout << std::flush;
+
+    // Redraw persistent UI
+    renderScore(prevState);
+    renderControls();
+}
+
+void Renderer::drawPaddle(const Paddle &paddle, bool erase)
+{
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    const int paddleX = static_cast<int>(paddle.position.x + 0.5f);
+    const int paddleY = static_cast<int>(paddle.position.y + 0.5f);
+
+    // Set the appropriate color or erase
+    if (erase)
+    {
+        std::cout << "\033[48;5;234m"; // Background color
+    }
+    else if (paddleX < width / 2)
+    {
+        std::cout << "\033[38;5;46m"; // Green for left paddle
+    }
+    else
+    {
+        std::cout << "\033[38;5;39m"; // Blue for right paddle
+    }
+
+    // Draw the paddle
+    for (int i = 0; i < Paddle::HEIGHT; i++)
+    {
+        terminal::setCursor(paddleX + 1, paddleY + i + 1);
+        if (erase)
+        {
+            std::cout << " ";
+        }
+        else if (i == 0 || i == Paddle::HEIGHT - 1)
+        {
+            std::cout << "■"; // Top and bottom
+        }
+        else
+        {
+            std::cout << "█"; // Middle sections
+        }
+    }
+
+    terminal::resetColor();
+}
+
+void Renderer::drawBall(const Ball &ball, bool erase)
+{
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    // Round ball position to integer coordinates
+    int ballX = static_cast<int>(ball.position.x + 0.5f);
+    int ballY = static_cast<int>(ball.position.y + 0.5f);
+
+    // Erase the previous position if different
+    if (lastBallX != ballX || lastBallY != ballY)
+    {
+        terminal::setCursor(lastBallX + 1, lastBallY + 1);
+        std::cout << "\033[48;5;234m " << std::flush; // Erase with background color
+    }
+
+    // Draw the new ball position if not erasing
+    if (!erase)
+    {
+        terminal::setCursor(ballX + 1, ballY + 1);
+        std::cout << "\033[1;93;48;5;234m◦" << std::flush; // Normal - light yellow, hollow
+
+        // Remember this position for later erasing
+        lastBallX = ballX;
+        lastBallY = ballY;
+    }
+
+    terminal::resetColor();
+}
+
 void Renderer::drawChatArea()
 {
+    if (debug)
+        return;
+
     std::lock_guard<std::recursive_mutex> lock(renderMutex);
 
     for (int y = height + 6; y < height + 11; ++y)
@@ -375,21 +1500,268 @@ void Renderer::drawChatArea()
         std::cout << "                    ";
     }
 }
+
+void Renderer::renderScore(const GameState &state)
+{
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    prevState.player1.score = state.player1.score;
+    prevState.player2.score = state.player2.score;
+
+    terminal::setCursor(width / 2 - 12, height + 1);
+    std::cout << getColoredText("PLAYER 1: " + std::to_string(state.player1.score), 46) << std::flush;
+    terminal::setCursor(width / 2 + 4, height + 1);
+    std::cout << getColoredText("PLAYER 2: " + std::to_string(state.player2.score), 39) << std::flush;
+}
+
+void Renderer::renderControls()
+{
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    terminal::setCursor(2, height + 2);
+    std::cout << getColoredText("CONTROLS: P1 (W/S)   P2 (↑/↓)   QUIT (Q)", 245) << std::flush;
+}
+
 void Renderer::renderChatInput(const std::string &inputText)
 {
     std::lock_guard<std::recursive_mutex> lock(renderMutex);
 
-    terminal::setCursor(2, height + 11);
+    if (!debug)
+        terminal::setCursor(2, height + 11);
     std::cout << "> " << inputText;
 }
 
 void Renderer::initializeChatArea(const std::string &opponentName)
 {
     std::lock_guard<std::recursive_mutex> lock(renderMutex);
-
-    terminal::setCursor(2, height + 6);
+    if (!debug)
+        terminal::setCursor(2, height + 6);
     std::cout << getColoredText("--- CHAT WITH " + opponentName + " ---", 245) << std::flush;
 }
+
+void Renderer::renderGoalAnimation()
+{
+    if (debug)
+        return;
+    {
+        std::lock_guard<std::recursive_mutex> lock(renderMutex);
+        terminal::setCursor(width / 2 - 3, height / 2);
+        std::cout << terminal::colorText("GOAL!", 196, 234) << std::flush;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    // drawArena();
+}
+
+void Renderer::showMatchFoundAnimation(const std::string &opponentName, uint32_t mmr)
+{
+    if (debug)
+        return;
+    {
+        std::lock_guard<std::recursive_mutex> lock(renderMutex);
+        clearScreen();
+
+        std::string message = "MATCH FOUND: " + opponentName + "(" + std::to_string(mmr) + ")";
+
+        // Flash the message
+        for (int i = 0; i < 3; i++)
+        {
+            // Show message
+            terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+            std::cout << getColoredText(message, 226) << std::flush;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+            // Hide message
+            terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+            std::cout << std::string(message.length(), ' ') << std::flush;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+
+        // Show message one final time
+        terminal::setCursor(width / 2 - message.length() / 2, height / 2 - 1);
+        std::cout << getColoredText(message, 226) << std::flush;
+
+        // Countdown animation
+        for (int i = 3; i > 0; i--)
+        {
+            terminal::setCursor(width / 2, height / 2 + 1);
+            std::cout << getColoredText("Starting in " + std::to_string(i) + "...", 245) << std::flush;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        // Clear the animation
+        for (int y = height / 2 - 3; y <= height / 2 + 3; y++)
+        {
+            terminal::setCursor(width / 4, y);
+            std::cout << std::string(width / 2, ' ') << std::flush;
+        }
+    }
+    // Re-draw the arena since we might have overwritten parts of it
+    drawArena();
+}
+
+void Renderer::showVictoryScreen(const std::string &winnerName, int player1Score, int player2Score)
+{
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+    terminal::showCursor();
+    terminal::clearScreen();
+
+    int boxWidth = 40;
+    int boxHeight = 10;
+    int boxX = (width - boxWidth) / 2;
+    int boxY = (height - boxHeight) / 2;
+
+    // Draw box
+    std::cout << "\033[38;5;220m"; // Gold color
+
+    // Using ASCII characters instead of Unicode box drawing characters
+    // Top border
+    terminal::setCursor(boxX, boxY);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Side borders
+    for (int y = 1; y < boxHeight - 1; y++)
+    {
+        terminal::setCursor(boxX, boxY + y);
+        std::cout << "|";
+        terminal::setCursor(boxX + boxWidth - 1, boxY + y);
+        std::cout << "|";
+    }
+
+    // Bottom border
+    terminal::setCursor(boxX, boxY + boxHeight - 1);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Title
+    terminal::setCursor(boxX + (boxWidth - 12) / 2, boxY + 2);
+    std::cout << "\033[1;38;5;220mGAME OVER!\033[0m";
+
+    // Winner message
+    std::string message = winnerName + " wins!";
+    terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 4);
+    std::cout << getColoredText(message, winnerName == "PLAYER 1" ? 46 : 39);
+
+    // Final score
+    terminal::setCursor(boxX + (boxWidth - 15) / 2, boxY + 6);
+    std::cout << getColoredText(std::to_string(player1Score) + " - " + std::to_string(player2Score), 255);
+
+    // Press any key to continue
+    terminal::setCursor(boxX + (boxWidth - 26) / 2, boxY + 8);
+    std::cout << getColoredText("Press any key to continue", 245) << std::flush;
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    // Reset color
+    terminal::resetColor();
+}
+
+void Renderer::showDisconnectMessage()
+{
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    // Create a box in the middle of the screen
+    int boxWidth = 30;
+    int boxHeight = 5;
+    int boxX = (width - boxWidth) / 2;
+    int boxY = (height - boxHeight) / 2;
+
+    // Draw box with red border
+    std::cout << "\033[38;5;196m"; // Red color
+
+    // Top border
+    terminal::setCursor(boxX, boxY);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Side borders
+    for (int y = 1; y < boxHeight - 1; y++)
+    {
+        terminal::setCursor(boxX, boxY + y);
+        std::cout << "|";
+        terminal::setCursor(boxX + boxWidth - 1, boxY + y);
+        std::cout << "|";
+    }
+
+    // Bottom border
+    terminal::setCursor(boxX, boxY + boxHeight - 1);
+    std::cout << "+";
+    for (int i = 0; i < boxWidth - 2; i++)
+    {
+        std::cout << "-";
+    }
+    std::cout << "+";
+
+    // Disconnect message
+    std::string message = "OPPONENT DISCONNECTED";
+    terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
+    std::cout << getColoredText(message, 196) << std::flush; // Red text
+
+    // Animation: Flash the message a few times
+    for (int i = 0; i < 5; i++)
+    {
+        terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
+        if (i % 2 == 0)
+        {
+            std::cout << std::string(message.length(), ' ') << std::flush;
+        }
+        else
+        {
+            std::cout << getColoredText(message, 196) << std::flush;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    }
+
+    // Show message one final time
+    terminal::setCursor(boxX + (boxWidth - message.length()) / 2, boxY + 2);
+    std::cout << getColoredText(message, 196) << std::flush;
+
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    // Reset color
+    terminal::resetColor();
+}
+
+void Renderer::renderGameState(const GameState &state, float interpolation)
+{
+    if (debug)
+        return;
+    std::lock_guard<std::recursive_mutex> lock(renderMutex);
+
+    drawArena();
+
+    GameState interpolatedState = interpolateStates(prevState, state, interpolation);
+    drawPaddle(prevState.player1, true);
+    drawPaddle(prevState.player2, true);
+    drawBall(prevState.ball, true);
+    drawPaddle(interpolatedState.player1);
+    drawPaddle(interpolatedState.player2);
+    drawBall(interpolatedState.ball);
+    prevState = state;
+}
+
 void Renderer::renderChatMessages(const std::vector<ChatMessageData> &messages)
 {
     drawChatArea();
@@ -398,40 +1770,413 @@ void Renderer::renderChatMessages(const std::vector<ChatMessageData> &messages)
     int startY = height + 6;
     for (size_t i = 0; i < messages.size() && i < 5; ++i)
     {
-        terminal::setCursor(2, startY + i);
-        std::cout << messages[i].sender << ": " << messages[i].content;
+        if (!debug)
+        {
+            terminal::setCursor(2, startY + i);
+        }
+        if (std::string(messages[i].sender) == "")
+        {
+            std::cout << "empty_sender: " << messages[i].content << std::endl;
+        }
+        else
+        {
+            std::cout << messages[i].sender << ": " << messages[i].content << std::endl;
+        }
     }
+}
+
+std::string Renderer::getColoredText(const std::string &text, int color) const
+{
+    return terminal::colorText(text, color);
+}
+
+GameState Renderer::interpolateStates(const GameState &prev, const GameState &current, float alpha)
+{
+    GameState interpolated;
+    interpolated.player1.position = Vec2::lerp(prev.player1.position, current.player1.position, alpha);
+    interpolated.player2.position = Vec2::lerp(prev.player2.position, current.player2.position, alpha);
+    interpolated.ball.position = Vec2::lerp(prev.ball.position, current.ball.position, alpha);
+    interpolated.ball.velocity = Vec2::lerp(prev.ball.velocity, current.ball.velocity, alpha);
+    interpolated.ball.speed = prev.ball.speed + (current.ball.speed - prev.ball.speed) * alpha;
+    interpolated.frame = current.frame;
+    return interpolated;
+}
+
+} // namespace pong
+
+// common/network.cpp
+#include "network.h"
+#include <chrono>
+#include <cstring>
+
+namespace pong
+{
+
+std::vector<uint8_t> createPacket(MessageType type, uint32_t frame, const void *data, uint32_t dataSize)
+{
+    NetworkHeader header;
+    memset(&header, 0, sizeof(header));
+    header.type = type;
+    header.frame = frame;
+    header.dataSize = dataSize;
+
+    std::vector<uint8_t> packet(sizeof(header) + dataSize, 0);
+    memcpy(packet.data(), &header, sizeof(header));
+
+    if (data && dataSize > 0)
+    {
+        memcpy(packet.data() + sizeof(header), data, dataSize);
+    }
+
+    return packet;
+}
+
+std::vector<uint8_t> createInputPacket(uint8_t inputFlags, uint8_t frame)
+{
+    PlayerInput input{inputFlags, frame};
+    return createPacket(MessageType::PLAYER_INPUT, frame, &input, sizeof(PlayerInput));
 }
 
 std::vector<uint8_t> createChatPacket(const std::string &sender, const std::string &message)
 {
-    // Calculate total size needed for chat message
-    uint16_t contentLength = static_cast<uint16_t>(message.size());
-    uint32_t totalSize = sizeof(ChatMessageData) + contentLength;
+    ChatMessageData chatMsg{};
+    strncpy(chatMsg.sender, sender.c_str(), sizeof(chatMsg.sender) - 1);
+    chatMsg.timestamp = static_cast<uint32_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    chatMsg.contentLength = std::min<uint16_t>(message.size(), sizeof(chatMsg.content) - 1);
+    strncpy(chatMsg.content, message.c_str(), chatMsg.contentLength);
+    chatMsg.content[chatMsg.contentLength] = '\0';
 
-    // Create the buffer for the chat message
-    std::vector<uint8_t> chatData(totalSize);
-    ChatMessageData *chatMsg = reinterpret_cast<ChatMessageData *>(chatData.data());
+    return createPacket(MessageType::CHAT_MESSAGE, 0, &chatMsg, sizeof(ChatMessageData));
+}
 
-    // Get current timestamp
-    auto now = std::chrono::system_clock::now();
-    uint32_t timestamp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+std::vector<uint8_t> createInputPacket(const PlayerInput &input)
+{
+    // Ensure padding bytes are initialized
+    PlayerInput cleanedInput;
+    memset(&cleanedInput, 0, sizeof(cleanedInput));
+    cleanedInput.playerId = input.playerId;
+    cleanedInput.flags = input.flags;
+    cleanedInput.frameNumber = input.frameNumber;
 
-    // Fill chat message header
-    strncpy(chatMsg->sender, sender.c_str(), sizeof(chatMsg->sender) - 1);
-    chatMsg->sender[sizeof(chatMsg->sender) - 1] = '\0'; // Ensure null termination
-    chatMsg->timestamp = timestamp;
-    chatMsg->contentLength = contentLength;
+    return createPacket(MessageType::PLAYER_INPUT, input.frameNumber, &cleanedInput, sizeof(cleanedInput));
+}
 
-    // Copy message content
-    if (contentLength > 0)
+NetworkHeader parseHeader(const std::vector<uint8_t> &packet)
+{
+    NetworkHeader header;
+    if (packet.size() >= HEADER_SIZE)
     {
-        memcpy(chatData.data() + sizeof(ChatMessageData), message.c_str(), contentLength);
+        memcpy(&header, packet.data(), HEADER_SIZE);
+    }
+    return header;
+}
+
+} // namespace pong
+// common/game_state.h
+#pragma once
+
+#include <cmath>
+#include <cstdint>
+#include <iostream>
+#include <string.h>
+#include <string>
+#include <vector>
+
+struct Vec2
+{
+    double x, y;
+
+    double magnitude() const
+    {
+        return sqrt(x * x + y * y);
     }
 
-    // Create the complete packet
-    return createPacket(MessageType::CHAT_MESSAGE, 0, chatData.data(), totalSize);
-}
+    Vec2 operator+(const Vec2 &other) const
+    {
+        Vec2 result;
+        result.x = x + other.x;
+        result.y = y + other.y;
+        return result;
+    }
+
+    Vec2 operator-(const Vec2 &other) const
+    {
+        Vec2 result;
+        result.x = x - other.x;
+        result.y = y - other.y;
+        return result;
+    }
+
+    Vec2 operator*(const Vec2 &other) const
+    {
+        Vec2 result;
+        result.x = x * other.x;
+        result.y = y * other.y;
+        return result;
+    }
+
+    Vec2 operator*(float scalar) const
+    {
+        Vec2 result;
+        result.x = x * scalar;
+        result.y = y * scalar;
+        return result;
+    }
+
+    static Vec2 lerp(const Vec2 &a, const Vec2 &b, float t)
+    {
+        return a + (b - a) * t;
+    }
+};
+
+struct Paddle
+{
+    Paddle() : position{0, 0}, size{1.0f, HEIGHT}, score(0), color(0)
+    {
+    }
+    static constexpr float HEIGHT = 8.0f;
+    static constexpr float WIDTH = 1.0f;
+
+    Vec2 position;
+    Vec2 size;
+    int32_t score;
+    uint32_t color;
+};
+
+struct Ball
+{
+    Ball() : position{0, 0}, last_position{0, 0}, velocity{0, 0}, speed(0.0f)
+    {
+    }
+
+    static constexpr float RADIUS = 1.0f;
+
+    Vec2 position;
+    Vec2 last_position;
+    Vec2 velocity;
+    float speed;
+};
+
+struct GameState
+{
+    GameState() : lastScoringPlayerIsPlayer1(false), frame(0)
+    {
+        memset(this, 0, sizeof(GameState));
+
+        player1.score = 0;
+        player2.score = 0;
+
+        player1.size = {1.0f, Paddle::HEIGHT};
+        player2.size = {1.0f, Paddle::HEIGHT};
+        reset(true);
+    }
+
+    static constexpr int WIDTH = 80;
+    static constexpr int HEIGHT = 20;
+    static constexpr int VICTORY_CONDITION = 2;
+    static constexpr float PADDLE_SPEED = 1.75f;
+    static constexpr float BALL_BASE_SPEED = 0.2f;
+    static constexpr float BALL_SPEED_INCREASE = 0.05f;
+
+    Paddle player1;
+    Paddle player2;
+    bool lastScoringPlayerIsPlayer1;
+    Ball ball;
+    uint32_t frame;
+
+    void reset(bool serve_left)
+    {
+        player1.position = {2.0f, HEIGHT / 2 - player1.size.y / 2};
+        player2.position = {WIDTH - 2 - player2.size.x, HEIGHT / 2 - player2.size.y / 2};
+
+        ball.position = {WIDTH / 2.0f, HEIGHT / 2.0f};
+        ball.speed = BALL_BASE_SPEED;
+        float angle = ((std::rand() % 100) / 100.0f - 0.5f) * (3.14159f / 2);
+        ball.velocity.x = ((serve_left) ? -1.0f : 1.0f) * BALL_BASE_SPEED * std::cos(angle);
+        ball.velocity.y = BALL_BASE_SPEED * std::sin(angle);
+        lastScoringPlayerIsPlayer1 = serve_left;
+        frame = 0;
+    }
+    bool update()
+    {
+        // Check for scoring
+        if (ball.position.x <= 0)
+        {
+            player2.score++;
+            lastScoringPlayerIsPlayer1 = false;
+            frame++;
+            reset(true);
+            return true;
+        }
+        else if (ball.position.x >= WIDTH - 1)
+        {
+            player1.score++;
+            lastScoringPlayerIsPlayer1 = true;
+            frame++;
+            reset(false);
+            return true;
+        }
+
+        // Update ball position
+        ball.position = ball.position + ball.velocity;
+
+        // Check collision with walls
+        if (ball.position.y <= 1 || ball.position.y >= HEIGHT - 2)
+        {
+            ball.velocity.y = -ball.velocity.y;
+            if (ball.position.y <= 1)
+            {
+                ball.position.y = 1;
+            }
+            else
+            {
+                ball.position.y = HEIGHT - 2;
+            }
+        }
+
+        // Check for collision with paddles
+        if (ball.position.x <= player1.position.x + Paddle::WIDTH && ball.position.x >= player1.position.x &&
+            ball.position.y >= player1.position.y && ball.position.y <= player1.position.y + Paddle::HEIGHT)
+        {
+
+            // Calculate reflection angle based on where the ball hit the paddle
+            float relativeIntersectY = (player1.position.y + (Paddle::HEIGHT / 2)) - ball.position.y;
+            float normalizedRelativeIntersectionY = (relativeIntersectY / (Paddle::HEIGHT / 2));
+            float bounceAngle = normalizedRelativeIntersectionY * (3.14159f / 4); // Max 45 degrees
+
+            ball.velocity.x = std::abs(ball.velocity.x); // Force direction away from paddle
+            ball.velocity.y = -std::sin(bounceAngle) * ball.velocity.x;
+
+            // Add a small speed increase on each hit
+            const float speedIncrease = 0.1f;
+            float currentSpeed = std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+            float ratio = (currentSpeed + speedIncrease) / currentSpeed;
+
+            ball.velocity.x *= ratio;
+            ball.velocity.y *= ratio;
+        }
+
+        if (ball.position.x >= player2.position.x - Ball::RADIUS && ball.position.x <= player2.position.x &&
+            ball.position.y >= player2.position.y && ball.position.y <= player2.position.y + Paddle::HEIGHT)
+        {
+
+            // Calculate reflection angle based on where the ball hit the paddle
+            float relativeIntersectY = (player2.position.y + (Paddle::HEIGHT / 2)) - ball.position.y;
+            float normalizedRelativeIntersectionY = (relativeIntersectY / (Paddle::HEIGHT / 2));
+            float bounceAngle = normalizedRelativeIntersectionY * (3.14159f / 4); // Max 45 degrees
+
+            ball.velocity.x = -std::abs(ball.velocity.x); // Force direction away from paddle
+            ball.velocity.y = -std::sin(bounceAngle) * std::abs(ball.velocity.x);
+
+            // Add a small speed increase on each hit
+            const float speedIncrease = 0.1f;
+            float currentSpeed = std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+            float ratio = (currentSpeed + speedIncrease) / currentSpeed;
+
+            ball.velocity.x *= ratio;
+            ball.velocity.y *= ratio;
+        }
+
+        frame++;
+        return false;
+    }
+
+    bool deserialize(const std::vector<uint8_t> &const_buffer)
+    {
+        std::vector<uint8_t> buffer = const_buffer;
+        buffer.shrink_to_fit();
+        if (buffer.size() != sizeof(GameState))
+        {
+            std::cerr << "Deserialize failed: buffer size " << buffer.size() << " != expected " << sizeof(GameState)
+                      << std::endl;
+            return false;
+        }
+        memcpy(this, buffer.data(), sizeof(GameState));
+        return true;
+    }
+};
+
+// common/network.h
+#pragma once
+
+#include "game_state.h"
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace pong
+{
+
+// Message types for protocol
+enum class MessageType : uint8_t
+{
+    // Control messages
+    CONNECT_REQUEST = 0,
+    CONNECT_RESPONSE,
+    DISCONNECT_EVENT,
+
+    // Game state messages
+    GAME_STATE_UPDATE,
+    PLAYER_INPUT,
+
+    // Chat messages
+    CHAT_MESSAGE,
+
+    // Matchmaking messages
+    MATCHMAKING_REQUEST,
+    MATCHMAKING_RESPONSE,
+
+    SCORE_EVENT,
+    VICTORY_EVENT,
+};
+
+// Input flags
+enum InputFlags : uint8_t
+{
+    NONE = 0x00,
+    UP = 0x01,
+    DOWN = 0x02,
+    QUIT = 0x04,
+    ARROW_UP = 0x08,
+    ARROW_DOWN = 0x10,
+};
+
+// Network header for all messages
+struct NetworkHeader
+{
+    MessageType type;
+    uint32_t frame;
+    uint32_t dataSize;
+};
+
+// All message structs
+struct ConnectRequest
+{
+    char username[32];
+    uint16_t udpPort;
+    uint16_t tcpPort;
+    uint32_t mmr;
+};
+
+struct ConnectResponse
+{
+    bool success;
+    char opponentName[32];
+    uint32_t mmr;
+    char hostAddress[16]; // IPv4 address string
+    uint16_t hostUdpPort;
+    uint16_t hostTcpPort;
+    bool isPlayer1;
+};
+
+struct PlayerInput
+{
+    uint8_t playerId;
+    uint8_t flags; // Combination of InputFlags
+    uint32_t frameNumber;
+};
+
 struct ChatMessageData
 {
     char sender[32];
@@ -439,6 +2184,54 @@ struct ChatMessageData
     uint16_t contentLength;
     char content[1024];
 };
+
+struct ScoreEvent
+{
+    uint8_t scoringPlayer; // 1 or 2
+    uint8_t player1Score;
+    uint8_t player2Score;
+};
+
+struct VictoryEvent
+{
+    uint8_t winningPlayer;
+    uint8_t player1Score;
+    uint8_t player2Score;
+    char winnerName[32];
+};
+
+// Constants for network communications
+constexpr int MAX_PACKET_SIZE = 1024;
+constexpr int MAX_CHAT_SIZE = 512;
+constexpr int UDP_SERVER_PORT = 8080;
+constexpr int TCP_SERVER_PORT = 8081;
+constexpr int HEADER_SIZE = sizeof(NetworkHeader);
+
+// UDP packet serialization/deserialization functions
+std::vector<uint8_t> createPacket(MessageType type, uint32_t frame, const void *data, uint32_t dataSize);
+std::vector<uint8_t> createInputPacket(uint8_t inputFlags, uint32_t frame);
+std::vector<uint8_t> createChatPacket(const std::string &sender, const std::string &message);
+std::vector<uint8_t> createInputPacket(const PlayerInput &input);
+
+// Helper to parse a network header from a buffer
+NetworkHeader parseHeader(const std::vector<uint8_t> &packet);
+
+} // namespace pong
+// common/utils.h
+#pragma once
+
+#include <chrono>
+#include <condition_variable>
+#include <ctime>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <sstream>
+#include <string>
+#include <thread>
 
 namespace pong
 {
@@ -483,3 +2276,1247 @@ inline std::string colorText(const std::string &text, int fg, int bg = -1)
     return ss.str();
 }
 } // namespace terminal
+
+// Time-related utilities
+class Timer
+{
+  public:
+    using Clock = std::chrono::high_resolution_clock;
+    using TimePoint = Clock::time_point;
+    using Duration = Clock::duration;
+
+    Timer() : startTime(Clock::now())
+    {
+    }
+
+    void reset()
+    {
+        startTime = Clock::now();
+    }
+
+    double elapsedMilliseconds() const
+    {
+        auto now = Clock::now();
+        return std::chrono::duration<double, std::milli>(now - startTime).count();
+    }
+
+    double elapsedSeconds() const
+    {
+        return elapsedMilliseconds() / 1000.0;
+    }
+
+  private:
+    TimePoint startTime;
+};
+
+// Thread-safe queue for message passing between threads
+template <typename T> class ThreadSafeQueue
+{
+  public:
+    ThreadSafeQueue() = default;
+
+    void push(T item)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        queue.push(std::move(item));
+        cv.notify_one();
+    }
+
+    bool tryPop(T &item)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (queue.empty())
+        {
+            return false;
+        }
+        item = std::move(queue.front());
+        queue.pop();
+        return true;
+    }
+
+    T pop()
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [this] { return !queue.empty(); });
+        T item = std::move(queue.front());
+        queue.pop();
+        return item;
+    }
+
+    bool empty() const
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        return queue.empty();
+    }
+
+    size_t size() const
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        return queue.size();
+    }
+
+  private:
+    std::queue<T> queue;
+    mutable std::mutex mutex;
+    std::condition_variable cv;
+};
+
+// Formatted timestamp string
+inline std::string getTimestamp()
+{
+    auto now = std::chrono::system_clock::now();
+    auto tt = std::chrono::system_clock::to_time_t(now);
+
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&tt), "%H:%M:%S");
+    return ss.str();
+}
+
+// Safe sleep that handles interrupts
+inline void safeSleep(std::chrono::microseconds duration)
+{
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = start + duration;
+
+    while (std::chrono::high_resolution_clock::now() < end)
+    {
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+}
+
+} // namespace pong
+// server/game_instance.cpp
+#include "game_instance.h"
+#include <iostream>
+
+namespace pong
+{
+
+GameInstance::GameInstance(uint32_t id, const std::string &player1, const std::string &player2)
+    : id_(id), active_(true), player1Id_(player1), player2Id_(player2), networkManager_(nullptr), matchmaker_(nullptr),
+      frameCounter_(0)
+{
+    /*
+    GameState gameState_;
+    std::vector<PlayerInput> pendingInputs_;
+    std::mutex inputMutex_; ?
+    */
+    gameState_.reset(rand() % 2 == 0);
+}
+
+void GameInstance::startGame()
+{
+    gameState_.reset(rand() % 2 == 0);
+    active_ = true;
+    frameCounter_ = 0;
+    std::cout << "Game " << id_ << " started!" << std::endl;
+}
+
+const GameState &GameInstance::getGameState() const
+{
+    return gameState_;
+}
+
+bool GameInstance::isActive() const
+{
+    return active_;
+}
+
+void GameInstance::stopGame()
+{
+    active_ = false;
+}
+
+uint32_t GameInstance::getId() const
+{
+    return id_;
+}
+
+bool GameInstance::hasPlayer(const std::string &clientId) const
+{
+    return (clientId == player1Id_ || clientId == player2Id_);
+}
+
+std::vector<std::string> GameInstance::getAllPlayers() const
+{
+    return std::vector<std::string>{player1Id_, player2Id_};
+}
+
+void GameInstance::update()
+{
+    if (!active_)
+        return;
+
+    frameCounter_++;
+    gameState_.frame = frameCounter_;
+
+    if (gameState_.update())
+    {
+        handleGoalScored();
+    }
+
+    processPlayerInputs();
+
+    if (networkManager_ != nullptr)
+    {
+        broadcastState(networkManager_);
+    }
+    else
+    {
+        std::cerr << "Network manager is null @ game_instance\n";
+        active_ = false;
+    }
+}
+
+void GameInstance::handleGoalScored()
+{
+    ScoreEvent scoreEvent;
+    scoreEvent.scoringPlayer = (gameState_.lastScoringPlayerIsPlayer1) ? 1 : 2;
+    scoreEvent.player1Score = gameState_.player1.score;
+    scoreEvent.player2Score = gameState_.player2.score;
+
+    std::vector<uint8_t> packet =
+        createPacket(MessageType::SCORE_EVENT, gameState_.frame, &scoreEvent, sizeof(scoreEvent));
+
+    if (networkManager_)
+    {
+        networkManager_->sendToClient(player1Id_, packet);
+        networkManager_->sendToClient(player2Id_, packet);
+    }
+
+    if (scoreEvent.player1Score >= GameState::VICTORY_CONDITION ||
+        scoreEvent.player2Score >= GameState::VICTORY_CONDITION)
+    {
+        handleVictory();
+    }
+}
+
+void GameInstance::handleVictory()
+{
+    VictoryEvent victoryEvent;
+    victoryEvent.winningPlayer = (gameState_.player1.score >= GameState::VICTORY_CONDITION) ? 1 : 2;
+    victoryEvent.player1Score = gameState_.player1.score;
+    victoryEvent.player2Score = gameState_.player2.score;
+
+    // Get winner's name from matchmaker
+    if (matchmaker_)
+    {
+        std::string winnerName;
+        std::string loserName;
+        if (victoryEvent.winningPlayer == 1)
+        {
+            winnerName = matchmaker_->getPlayer1Name();
+            loserName = matchmaker_->getPlayer2Name();
+        }
+        else
+        {
+            winnerName = matchmaker_->getPlayer2Name();
+            loserName = matchmaker_->getPlayer1Name();
+        }
+
+        matchmaker_->updateMMR(winnerName, loserName);
+        strncpy(victoryEvent.winnerName, winnerName.c_str(), sizeof(victoryEvent.winnerName) - 1);
+        victoryEvent.winnerName[sizeof(victoryEvent.winnerName) - 1] = '\0';
+    }
+
+    std::vector<uint8_t> packet =
+        createPacket(MessageType::VICTORY_EVENT, gameState_.frame, &victoryEvent, sizeof(victoryEvent));
+
+    // Broadcast victory event
+    if (networkManager_)
+    {
+        networkManager_->sendToClient(player1Id_, packet);
+        networkManager_->sendToClient(player2Id_, packet);
+    }
+
+    // Deactivate game
+    matchmaker_->deregisterPlayer(matchmaker_->getPlayer1Name());
+    matchmaker_->deregisterPlayer(matchmaker_->getPlayer2Name());
+
+    active_ = false;
+}
+
+void GameInstance::processPlayerInputs()
+{
+    std::lock_guard<std::mutex> lock(inputMutex_);
+    for (const auto &input : pendingInputs_)
+    {
+        if (input.playerId == 1)
+        {
+            if (input.flags & InputFlags::UP || input.flags & InputFlags::ARROW_UP)
+            {
+                if (gameState_.player1.position.y > 1)
+                {
+                    gameState_.player1.position.y -= 1;
+                }
+            }
+            if (input.flags & InputFlags::DOWN || input.flags & InputFlags::ARROW_DOWN)
+            {
+                if (gameState_.player1.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
+                {
+                    gameState_.player1.position.y += 1;
+                }
+            }
+        }
+        else if (input.playerId == 2)
+        {
+            if (input.flags & InputFlags::UP || input.flags & InputFlags::ARROW_UP)
+            {
+                if (gameState_.player2.position.y > 1)
+                {
+                    gameState_.player2.position.y -= 1;
+                }
+            }
+            if (input.flags & InputFlags::DOWN || input.flags & InputFlags::ARROW_DOWN)
+            {
+                if (gameState_.player2.position.y < GameState::HEIGHT - Paddle::HEIGHT - 1)
+                {
+                    gameState_.player2.position.y += 1;
+                }
+            }
+        }
+    }
+    pendingInputs_.clear();
+}
+
+void GameInstance::addPlayerInput(uint8_t playerId, uint8_t inputFlags)
+{
+    std::lock_guard<std::mutex> lock(inputMutex_);
+    pendingInputs_.push_back({playerId, inputFlags});
+    std::cout << "Game " << id_ << " - Received input - Player: " << (int)playerId << " Flags: " << (int)inputFlags
+              << std::endl;
+}
+
+void GameInstance::broadcastState(NetworkManager *networkManager)
+{
+    if (!networkManager)
+        return;
+
+    GameState gamestate;
+    memset(&gamestate, 0, sizeof(GameState));
+    gamestate = gameState_;
+
+    std::vector<uint8_t> packet =
+        createPacket(MessageType::GAME_STATE_UPDATE, gameState_.frame, &gameState_, sizeof(GameState));
+
+    networkManager->sendToClient(player1Id_, packet);
+    networkManager->sendToClient(player2Id_, packet);
+}
+
+} // namespace pong
+// server/game_manager.cpp
+#include "game_manager.h"
+
+namespace pong
+{
+
+GameManager::GameManager() : nextGameId_(1), networkManager(nullptr), matchmaker(nullptr)
+{
+}
+
+GameManager::~GameManager()
+{
+}
+
+GameInstance *GameManager::getGame(uint32_t gameId)
+{
+    std::lock_guard<std::mutex> lock(gamesMutex_);
+    auto it = games_.find(gameId);
+    if (it != games_.end())
+    {
+        return it->second.get();
+    }
+    return nullptr;
+}
+
+void GameManager::removeGame(uint32_t gameId)
+{
+    std::lock_guard<std::mutex> lock(gamesMutex_);
+    games_.erase(gameId);
+}
+
+uint32_t GameManager::createGame(const std::string &player1, const std::string &player2, bool start = true)
+{
+    std::lock_guard<std::mutex> lock(gamesMutex_);
+    uint32_t gameId = nextGameId_++;
+    games_[gameId] = std::make_unique<GameInstance>(gameId, player1, player2);
+    games_[gameId].get()->setMatchmaker(matchmaker);
+    games_[gameId].get()->setNetworkManager(networkManager);
+    if (start)
+        games_[gameId].get()->startGame();
+    return gameId;
+}
+
+void GameManager::updateAllGames()
+{
+    std::lock_guard<std::mutex> lock(gamesMutex_);
+    for (auto &[id, game] : games_)
+    {
+        if (game->isActive())
+        {
+            game->update();
+        }
+    }
+}
+
+void GameManager::cleanupInactiveGames()
+{
+    std::lock_guard<std::mutex> lock(gamesMutex_);
+    for (auto it = games_.begin(); it != games_.end();)
+    {
+        if (!it->second->isActive())
+        {
+            it = games_.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
+uint32_t GameManager::findGameIdForClient(const std::string &clientId)
+{
+    std::lock_guard<std::mutex> lock(gamesMutex_);
+    for (const auto &[id, game] : games_)
+    {
+        if (game->hasPlayer(clientId))
+        {
+            return id;
+        }
+    }
+    return 0;
+}
+
+} // namespace pong
+// server/main.cpp
+#include "matchmaker.h"
+#include "network.h"
+#include <iostream>
+#include <signal.h>
+#include <thread>
+
+volatile bool running = true;
+
+// Signal handler
+void signalHandler(int signal)
+{
+    std::cout << "Received interrupt / termination signal. Exiting..." << std::endl;
+    if (!running)
+    {
+        std::exit(1);
+    }
+    running = false;
+}
+
+int main()
+{
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
+
+    pong::Matchmaker matchmaker;
+    pong::GameManager gameManager;
+    pong::NetworkManager networkManager;
+
+    networkManager.setGameManager(&gameManager);
+    networkManager.setMatchmaker(&matchmaker);
+
+    matchmaker.setGameManager(&gameManager);
+    matchmaker.setNetworkManager(&networkManager);
+
+    gameManager.setMatchmaker(&matchmaker);
+    gameManager.setNetworkManager(&networkManager);
+
+    if (!networkManager.startServer())
+    {
+        std::cerr << "Failed to start server." << std::endl;
+        return 1;
+    }
+
+    while (running)
+    {
+        matchmaker.process();
+        networkManager.process();
+        // Sleep to avoid maxing out CPU
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    }
+
+    networkManager.shutdown();
+
+    std::cout << "Server shutdown complete." << std::endl;
+    return 0;
+}
+
+// server/matchmaker.cpp
+#include "matchmaker.h"
+#include "network.h"
+#include <iostream>
+
+namespace pong
+{
+
+Matchmaker::Matchmaker() : networkManager(nullptr), gameManager(nullptr), currentPlayer1(""), currentPlayer2("")
+{
+    loadMMR();
+}
+
+Matchmaker::~Matchmaker()
+{
+}
+
+void Matchmaker::loadMMR()
+{
+    std::ifstream file(mmrFile);
+    std::string line;
+    while (std::getline(file, line))
+    {
+        std::istringstream ss(line);
+        std::string name;
+        int mmr;
+        if (std::getline(ss, name, ',') && ss >> mmr)
+        {
+            std::cout << "Loaded mmr of player " << name << ": " << mmr << std::endl;
+            mmrMap[name] = mmr;
+        }
+    }
+}
+
+void Matchmaker::saveMMR()
+{
+    std::ofstream file(mmrFile, std::ios_base::openmode::_S_ate);
+    for (const auto &[user, mmr] : mmrMap)
+    {
+        file << user << "," << mmr << "\n";
+    }
+}
+
+void Matchmaker::updateMMR(const std::string &winner, const std::string &loser)
+{
+    int K = 32;
+    int Ra = mmrMap[winner];
+    int Rb = mmrMap[loser];
+
+    float Ea = 1.0f / (1.0f + pow(10.0f, (Rb - Ra) / 400.0f));
+    float Eb = 1.0f / (1.0f + pow(10.0f, (Ra - Rb) / 400.0f));
+
+    mmrMap[winner] = std::round(Ra + K * (1 - Ea));
+    mmrMap[loser] = std::round(Rb + K * (0 - Eb));
+
+    std::cout << "New mmr of " << winner << "(" << Ra << ") is " << mmrMap[winner] << std::endl;
+    std::cout << "New mmr of " << loser << "(" << Rb << ") is " << mmrMap[loser] << std::endl;
+
+    saveMMR();
+}
+
+uint8_t Matchmaker::registerPlayer(const PlayerInfo &player)
+{
+    std::lock_guard<std::mutex> lock(queueMutex);
+
+    // Check if player is already registered
+    if (activePlayersByUsername.find(player.username) != activePlayersByUsername.end() ||
+        activePlayersByClientId.find(player.clientId) != activePlayersByClientId.end())
+    {
+        std::cerr << "Player already registered: " << player.username << std::endl;
+        return 0;
+    }
+
+    if (mmrMap.find(player.username) == mmrMap.end())
+    {
+        mmrMap[player.username] = 1000;
+    }
+
+    activePlayersByUsername[player.username] = player;
+    activePlayersByClientId[player.clientId] = player;
+
+    waitingPlayers.push(player);
+
+    return waitingPlayers.size();
+}
+
+void Matchmaker::process()
+{
+    PlayerInfo player1, player2;
+    if (findMatch(player1, player2))
+    {
+        std::cout << "Match found: " << player1.username << "(" << mmrMap[player1.username] << ") vs "
+                  << player2.username << "(" << mmrMap[player2.username] << ")" << std::endl;
+
+        // Store current players
+        {
+            std::lock_guard<std::mutex> lock(playersMutex);
+            currentPlayer1 = player1.username;
+            currentPlayer2 = player2.username;
+        }
+
+        notifyPlayersAboutMatch(player1, player2);
+    }
+}
+
+bool Matchmaker::findMatch(PlayerInfo &player1, PlayerInfo &player2)
+{
+    std::lock_guard<std::mutex> lock(queueMutex);
+
+    if (waitingPlayers.size() < 2)
+        return false;
+
+    std::vector<PlayerInfo> queue;
+    while (!waitingPlayers.empty())
+    {
+        queue.push_back(waitingPlayers.front());
+        waitingPlayers.pop();
+    }
+
+    const int maxDeltaStart = 50;
+    const int maxDeltaLimit = 450;
+
+    for (int delta = maxDeltaStart; delta <= maxDeltaLimit; delta += 100)
+    {
+        for (size_t i = 0; i < queue.size(); ++i)
+        {
+            int mmr1 = mmrMap[queue[i].username];
+            for (size_t j = i + 1; j < queue.size(); ++j)
+            {
+                int mmr2 = mmrMap[queue[j].username];
+                if (std::abs(mmr1 - mmr2) <= delta)
+                {
+                    player1 = queue[i];
+                    player2 = queue[j];
+
+                    // Remove both from queue
+                    queue.erase(queue.begin() + j);
+                    queue.erase(queue.begin() + i);
+
+                    // Push remaining back into waiting queue
+                    for (const auto &p : queue)
+                        waitingPlayers.push(p);
+
+                    return true;
+                }
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    }
+
+    // Put all players back if no match
+    for (const auto &p : queue)
+        waitingPlayers.push(p);
+
+    return false;
+}
+
+void Matchmaker::notifyPlayersAboutMatch(const PlayerInfo &player1, const PlayerInfo &player2)
+{
+    if (!networkManager || !gameManager)
+    {
+        std::cerr << "NetworkManager not set in Matchmaker" << std::endl;
+        return;
+    }
+
+    uint32_t gameId =
+        gameManager->createGame(player1.clientId, player2.clientId, false); // not starting the game to desync it a bit
+
+    // Create and send match notification for player 1
+    std::vector<uint8_t> packet1 = createMatchNotificationPacket(player1, player2);
+    networkManager->sendToClient(player1.address, player1.udpPort, packet1);
+
+    // Create and send match notification for player 2
+    std::vector<uint8_t> packet2 = createMatchNotificationPacket(player2, player1);
+    networkManager->sendToClient(player2.address, player2.udpPort, packet2);
+
+    std::cout << "Sent match notifications to both players" << std::endl;
+
+    if (GameInstance *game = gameManager->getGame(gameId))
+    {
+        std::thread([gameId, this] {
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
+            // Re-acquire the game pointer after delay
+            if (GameInstance *gameAfterDelay = gameManager->getGame(gameId))
+            {
+                gameAfterDelay->startGame();
+            }
+        }).detach();
+    }
+}
+
+std::string Matchmaker::getPlayer1Name()
+{
+    std::lock_guard<std::mutex> lock(playersMutex);
+    return currentPlayer1;
+}
+
+std::string Matchmaker::getPlayer2Name()
+{
+    std::lock_guard<std::mutex> lock(playersMutex);
+    return currentPlayer2;
+}
+
+void Matchmaker::deregisterPlayer(const std::string &username)
+{
+    std::lock_guard<std::mutex> lock(queueMutex);
+
+    // Find the player in activePlayersByUsername
+    auto usernameIt = activePlayersByUsername.find(username);
+    if (usernameIt == activePlayersByUsername.end())
+    {
+        // Player not found, no further action needed
+        return;
+    }
+
+    // Extract clientId before erasing
+    const std::string clientId = usernameIt->second.clientId;
+
+    // Erase from both maps (order matters!)
+    activePlayersByUsername.erase(usernameIt); // Erase by iterator to avoid rehashing
+    activePlayersByClientId.erase(clientId);   // Now safe to erase from the other map
+
+    // Check if this was one of the current players
+    std::lock_guard<std::mutex> plock(playersMutex);
+    if (username == currentPlayer1)
+    {
+        currentPlayer1.clear();
+    }
+    if (username == currentPlayer2)
+    {
+        currentPlayer2.clear();
+    }
+
+    // Remove from waiting queue if present
+    std::queue<PlayerInfo> tempQueue;
+    while (!waitingPlayers.empty())
+    {
+        PlayerInfo player = waitingPlayers.front();
+        waitingPlayers.pop();
+        if (player.username != username)
+        {
+            tempQueue.push(player);
+        }
+    }
+    waitingPlayers = tempQueue;
+}
+
+void Matchmaker::handlePlayerDisconnect(const std::string &clientId)
+{
+    std::lock_guard<std::mutex> lock(queueMutex);
+
+    auto it = activePlayersByClientId.find(clientId);
+    if (it != activePlayersByClientId.end())
+    {
+        std::string user = it->second.username;
+
+        // Consider them the loser, find the other player
+        std::string winner;
+        {
+            std::lock_guard<std::mutex> lock(playersMutex);
+            if (user == currentPlayer1)
+                winner = currentPlayer2;
+            else if (user == currentPlayer2)
+                winner = currentPlayer1;
+        }
+
+        if (!winner.empty())
+        {
+            updateMMR(winner, user);
+            std::cout << "MMR updated due to disconnect: " << winner << " beat " << user << std::endl;
+        }
+    }
+
+    if (it != activePlayersByClientId.end())
+    {
+        const std::string &username = it->second.username;
+        activePlayersByUsername.erase(username);
+        activePlayersByClientId.erase(clientId);
+
+        // Check if this was one of the current players
+        std::lock_guard<std::mutex> plock(playersMutex);
+        if (username == currentPlayer1)
+        {
+            currentPlayer1.clear();
+        }
+        if (username == currentPlayer2)
+        {
+            currentPlayer2.clear();
+        }
+    }
+
+    // Remove from waiting queue if present
+    std::queue<PlayerInfo> tempQueue;
+    while (!waitingPlayers.empty())
+    {
+        PlayerInfo player = waitingPlayers.front();
+        waitingPlayers.pop();
+        if (player.clientId != clientId)
+        {
+            tempQueue.push(player);
+        }
+    }
+    waitingPlayers = tempQueue;
+}
+
+std::vector<uint8_t> Matchmaker::createMatchNotificationPacket(const PlayerInfo &player, const PlayerInfo &opponent)
+{
+    // Create response structure
+    ConnectResponse response;
+    response.success = true;
+    memset(&response, 0, sizeof(response));
+    strncpy(response.opponentName, opponent.username.data(), opponent.username.size());
+    strncpy(response.hostAddress, opponent.address.data(), opponent.address.size());
+
+    response.hostUdpPort = opponent.udpPort;
+    response.hostTcpPort = opponent.tcpPort;
+    response.mmr = mmrMap[opponent.username];
+
+    // Arbitrary player order determination
+    response.isPlayer1 = (player.username < opponent.username);
+
+    response.success = true;
+
+    // Create packet
+    return createPacket(MessageType::CONNECT_RESPONSE, 0, &response, sizeof(response));
+}
+
+} // namespace pong
+// server/network.cpp
+#include "network.h"
+#include "matchmaker.h"
+#include <arpa/inet.h>
+#include <chrono>
+#include <cstring>
+#include <fcntl.h>
+#include <iostream>
+#include <unistd.h>
+
+namespace pong
+{
+
+NetworkManager::NetworkManager() : udpSocket(-1), running(false), matchmaker(nullptr), gameManager(nullptr)
+{
+    lastUpdate = std::chrono::steady_clock::now();
+    lastCleanupTime = std::chrono::steady_clock::now();
+}
+
+NetworkManager::~NetworkManager()
+{
+    shutdown();
+}
+
+bool NetworkManager::startServer(uint16_t port)
+{
+    // Create UDP socket
+    udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udpSocket < 0)
+    {
+        perror("Failed to create socket");
+        return false;
+    }
+
+    // Set socket options
+    int opt = 1;
+    if (setsockopt(udpSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
+        perror("setsockopt failed");
+        close(udpSocket);
+        udpSocket = -1;
+        return false;
+    }
+
+    // Bind to port
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(port);
+
+    if (bind(udpSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
+    {
+        perror("Bind failed");
+        close(udpSocket);
+        udpSocket = -1;
+        return false;
+    }
+
+    // Set non-blocking mode
+    int flags = fcntl(udpSocket, F_GETFL, 0);
+    fcntl(udpSocket, F_SETFL, flags | O_NONBLOCK);
+
+    // Start receiver thread
+    running = true;
+    receiveThread = std::thread(&NetworkManager::receiveLoop, this);
+
+    std::cout << "UDP Server started on port " << port << std::endl;
+    return true;
+}
+
+void NetworkManager::shutdown()
+{
+    running = false;
+
+    if (receiveThread.joinable())
+    {
+        receiveThread.join();
+    }
+
+    if (udpSocket >= 0)
+    {
+        close(udpSocket);
+        udpSocket = -1;
+    }
+}
+
+void NetworkManager::receiveLoop()
+{
+    const size_t bufferSize = 2048;
+    std::vector<uint8_t> buffer(bufferSize);
+    sockaddr_in senderAddr{};
+    socklen_t senderLen = sizeof(senderAddr);
+
+    while (running)
+    {
+        // Receive data
+        senderLen = sizeof(senderAddr);
+        ssize_t bytesReceived = recvfrom(udpSocket, buffer.data(), bufferSize, 0, (sockaddr *)&senderAddr, &senderLen);
+
+        if (bytesReceived > 0)
+        {
+            // Process valid packets
+            std::vector<uint8_t> packetData(buffer.begin(), buffer.begin() + bytesReceived);
+            handlePacket(packetData, senderAddr);
+        }
+        else if (bytesReceived < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+        {
+            // Only log actual errors, not would-block conditions
+            perror("Error receiving data");
+        }
+
+        // Small sleep to prevent CPU hogging in the loop
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
+
+void NetworkManager::handlePacket(const std::vector<uint8_t> &data, const sockaddr_in &sender)
+{
+    // Check if packet is large enough for a header
+    if (data.size() < sizeof(NetworkHeader))
+    {
+        std::cerr << "Received malformed packet (too small for header)" << std::endl;
+        return;
+    }
+
+    // Parse header
+    const NetworkHeader *header = reinterpret_cast<const NetworkHeader *>(data.data());
+    std::string clientId = getClientIdentifier(sender);
+
+    // Handle packet based on message type
+    switch (header->type)
+    {
+    case MessageType::CONNECT_REQUEST:
+        handleConnectRequest(data, sender);
+        break;
+
+    case MessageType::PLAYER_INPUT:
+        handlePlayerInput(data, clientId);
+        break;
+
+    default:
+        std::cerr << "Received unhandled message type: " << static_cast<int>(header->type) << std::endl;
+        break;
+    }
+}
+
+void NetworkManager::handleConnectRequest(const std::vector<uint8_t> &data, const sockaddr_in &sender)
+{
+    // Check packet size
+    if (data.size() < sizeof(NetworkHeader) + sizeof(ConnectRequest))
+    {
+        std::cerr << "Connect request packet too small" << std::endl;
+        return;
+    }
+
+    // Parse connect request
+    const NetworkHeader *header = reinterpret_cast<const NetworkHeader *>(data.data());
+    const ConnectRequest *request = reinterpret_cast<const ConnectRequest *>(data.data() + sizeof(NetworkHeader));
+
+    std::string clientId = getClientIdentifier(sender);
+    std::string clientAddr = inet_ntoa(sender.sin_addr);
+    uint16_t clientPort = ntohs(sender.sin_port);
+
+    std::cout << "Received connection request from " << request->username << " at " << clientAddr << ":" << clientPort
+              << std::endl;
+
+    // Create player info for matchmaking
+    PlayerInfo player;
+    player.username = request->username;
+    player.clientId = clientId;
+    player.address = clientAddr;
+    player.udpPort = request->udpPort; // Client's listening port
+    player.tcpPort = request->tcpPort; // For direct chat
+    player.mmr = request->mmr;
+
+    // Register player with matchmaker
+    uint8_t playerId = 0;
+    bool success = false;
+    if (matchmaker)
+    {
+        playerId = matchmaker->registerPlayer(player);
+    }
+    if (playerId != 0)
+    {
+        success = true;
+        // Add client to our connected clients
+        std::lock_guard<std::mutex> lock(clientsMutex);
+
+        // Check if client already exists
+        auto it = clientIdToIndex.find(clientId);
+        if (it != clientIdToIndex.end())
+        {
+            // Update existing client
+            clients[it->second].lastActivityTime =
+                std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+                    .count();
+        }
+        else
+        {
+            // Add new client
+            ConnectedClient newClient;
+            newClient.clientId = clientId;
+            newClient.playerId = playerId;
+            newClient.address = clientAddr;
+            newClient.port = request->udpPort; // Use client's listening port, not the source port
+            newClient.lastActivityTime =
+                std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+                    .count();
+
+            clients.push_back(newClient);
+            clientIdToIndex[clientId] = clients.size() - 1;
+        }
+    }
+
+    // Send acknowledgment response
+    ConnectResponse response;
+    memset(&response, 0, sizeof(response)); // Zero out entire struct
+    strncpy(response.hostAddress, player.address.data(), player.address.size());
+    response.hostTcpPort = player.tcpPort;
+    response.hostUdpPort = player.udpPort;
+    response.opponentName[0] = '\0';
+    response.success = success;
+    response.isPlayer1 = (playerId == 1);
+    response.mmr = 420;
+
+    std::vector<uint8_t> responsePacket = createPacket(MessageType::CONNECT_RESPONSE, 0, &response, sizeof(response));
+
+    // Send to client's listening port, not the source port
+    sendToClient(clientAddr, request->udpPort, responsePacket);
+}
+
+void NetworkManager::handlePlayerInput(const std::vector<uint8_t> &data, const std::string &clientId)
+{
+    // Check packet size
+    if (data.size() < sizeof(NetworkHeader) + sizeof(PlayerInput))
+    {
+        std::cerr << "Player input packet too small" << std::endl;
+        return;
+    }
+
+    // Parse player input
+    const NetworkHeader *header = reinterpret_cast<const NetworkHeader *>(data.data());
+    const PlayerInput *input = reinterpret_cast<const PlayerInput *>(data.data() + sizeof(NetworkHeader));
+
+    // Find player ID from client ID
+    uint8_t playerId = 0;
+    {
+        std::lock_guard<std::mutex> lock(clientsMutex);
+        auto it = clientIdToIndex.find(clientId);
+        if (it != clientIdToIndex.end())
+        {
+            playerId = clients[it->second].playerId;
+            // Update last activity time
+            clients[it->second].lastActivityTime =
+                std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+                    .count();
+        }
+    }
+
+    // Find which game this client is in
+    uint32_t gameId = gameManager->findGameIdForClient(clientId);
+    if (gameId == 0)
+    {
+        std::cerr << "Client not in any game: " << clientId << std::endl;
+        return;
+    }
+
+    GameInstance *game = gameManager->getGame(gameId);
+    if (!game)
+    {
+        std::cerr << "Game not found: " << gameId << std::endl;
+        return;
+    }
+
+    if (input->flags == InputFlags::QUIT)
+    {
+        handleClientDisconnect(clientId, true);
+    }
+    else
+    {
+        game->addPlayerInput(playerId, input->flags);
+    }
+}
+
+uint32_t NetworkManager::findGameIdForClient(const std::string &clientId)
+{
+    if (gameManager)
+    {
+        return gameManager->findGameIdForClient(clientId);
+    }
+    return 0;
+}
+
+void NetworkManager::handleClientDisconnect(const std::string &clientId, bool notifyOthers)
+{
+    // First check if client exists to avoid unnecessary work
+    {
+        std::lock_guard<std::mutex> lock(clientsMutex);
+        auto it = clientIdToIndex.find(clientId);
+        if (it == clientIdToIndex.end())
+            return;
+    }
+
+    if (notifyOthers)
+    { // primary disconnectee
+        matchmaker->handlePlayerDisconnect(clientId);
+    }
+
+    // Get game info first before modifying any data structures
+    uint32_t gameId = gameManager->findGameIdForClient(clientId);
+    GameInstance *game = gameManager->getGame(gameId);
+
+    // Create disconnect packet once
+    std::vector<uint8_t> packet = createPacket(MessageType::DISCONNECT_EVENT, 0, nullptr, 0);
+
+    // Collect other players that need to be disconnected
+    std::vector<std::string> otherPlayersToDisconnect;
+    if (notifyOthers && game)
+    {
+        for (const std::string &otherClientId : game->getAllPlayers())
+        {
+            if (otherClientId != clientId)
+            {
+                otherPlayersToDisconnect.push_back(otherClientId);
+            }
+        }
+    }
+
+    // Notify other players
+    for (const std::string &otherClientId : otherPlayersToDisconnect)
+    {
+        std::cout << "Disconnecting remaining player in game " << gameId << ": " << otherClientId << std::endl;
+        sendToClient(otherClientId, packet);
+    }
+
+    // Now remove the current client
+    {
+        std::lock_guard<std::mutex> lock(clientsMutex);
+        auto it = clientIdToIndex.find(clientId);
+        if (it == clientIdToIndex.end())
+            return;
+
+        const ConnectedClient &disconnected = clients[it->second];
+        std::cout << "Client " << clientId << " disconnected: " << disconnected.address << std::endl;
+
+        // Remove this client from list
+        clients.erase(clients.begin() + it->second);
+        clientIdToIndex.erase(it);
+
+        // Rebuild index
+        clientIdToIndex.clear();
+        for (size_t i = 0; i < clients.size(); ++i)
+        {
+            clientIdToIndex[clients[i].clientId] = i;
+        }
+    }
+
+    // Handle game cleanup
+    if (game)
+    {
+        game->stopGame();
+        gameManager->removeGame(gameId);
+    }
+
+    // Finally, recursively disconnect other players, but after we've already
+    // finished processing the current client
+    if (notifyOthers)
+        for (const std::string &otherClientId : otherPlayersToDisconnect)
+        {
+            handleClientDisconnect(otherClientId, false);
+        }
+}
+void NetworkManager::process()
+{
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdate);
+
+    if (elapsed.count() >= 16)
+    { // ~60fps
+        gameManager->updateAllGames();
+        lastUpdate = now;
+    }
+}
+
+void NetworkManager::sendToClient(const std::string &clientId, const std::vector<uint8_t> &packet)
+{
+    std::lock_guard<std::mutex> lock(clientsMutex);
+
+    auto it = clientIdToIndex.find(clientId);
+    if (it != clientIdToIndex.end())
+    {
+        const ConnectedClient &client = clients[it->second];
+        sendToClient(client.address, client.port, packet);
+    }
+    else
+    {
+        std::cerr << "Attempted to send to unknown client ID: " << clientId << std::endl;
+    }
+}
+
+void NetworkManager::sendToClient(const std::string &address, uint16_t port, const std::vector<uint8_t> &packet)
+{
+    sockaddr_in clientAddr{};
+    clientAddr.sin_family = AF_INET;
+    clientAddr.sin_port = htons(port);
+
+    if (inet_pton(AF_INET, address.c_str(), &clientAddr.sin_addr.s_addr) <= 0)
+    {
+        std::cerr << "Invalid client address: " << address << std::endl;
+        return;
+    }
+
+    ssize_t bytesSent = sendto(udpSocket, packet.data(), packet.size(), 0, (sockaddr *)&clientAddr, sizeof(clientAddr));
+
+    if (bytesSent < 0)
+    {
+        perror("Failed to send packet");
+    }
+    else if (bytesSent != packet.size())
+    {
+        std::cerr << "Sent " << bytesSent << " bytes, expected " << packet.size() << std::endl;
+    }
+}
+
+void NetworkManager::broadcastToGame(const std::vector<uint8_t> &packet, uint32_t gameId)
+{
+    std::lock_guard<std::mutex> lock(clientsMutex);
+
+    auto *game = gameManager->getGame(gameId);
+    if (!game)
+        return;
+
+    for (std::string id : game->getAllPlayers())
+    {
+        sendToClient(id, packet);
+    }
+}
+
+std::string NetworkManager::getClientIdentifier(const sockaddr_in &addr)
+{
+    return std::string(inet_ntoa(addr.sin_addr)) + ":" + std::to_string(ntohs(addr.sin_port));
+}
+
+} // namespace pong

@@ -59,7 +59,7 @@ class Matchmaker
     std::string getPlayer1Name();
     std::string getPlayer2Name();
 
-    void handlePlayerDisconnect(const std::string &clientId);
+    void handlePlayerDisconnect(const std::string &clientId, bool updateMMR);
 
     std::unordered_map<std::string, int> mmrMap; // username/mmr
     const std::string mmrFile = "ratings.csv";

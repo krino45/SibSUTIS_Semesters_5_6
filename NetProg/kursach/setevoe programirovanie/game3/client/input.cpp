@@ -42,10 +42,8 @@ void InputHandler::prepareForMenuInput()
     disableRawMode(); // Canonical + echo
     terminal::showCursor();
 
-    // Flush any pending input
     tcflush(STDIN_FILENO, TCIFLUSH);
 
-    // Ensure stdin is reopened if it was closed
     if (std::cin.eof() || std::cin.fail())
     {
         // std::cout << "reopening stdin\n ";
@@ -162,21 +160,20 @@ uint8_t InputHandler::poll()
     {
         char c = readChar();
 
-        // Handle quit
         if (c == 'q' || c == 'Q')
         {
             input |= InputFlags::QUIT;
             if (quitCallback)
                 quitCallback();
+            return input;
         }
 
-        // Handle paddle movement
         if (c == 'w' || c == 'W')
             input |= InputFlags::UP;
         if (c == 's' || c == 'S')
             input |= InputFlags::DOWN;
 
-        // Handle arrow keys (3-byte sequences)
+        // arrow keys
         if (c == '\033')
         {
             char seq[2];
@@ -185,14 +182,13 @@ uint8_t InputHandler::poll()
                 if (seq[0] == '[')
                 {
                     if (seq[1] == 'A')
-                        input |= InputFlags::ARROW_UP; // Up arrow
+                        input |= InputFlags::ARROW_UP;
                     if (seq[1] == 'B')
-                        input |= InputFlags::ARROW_DOWN; // Down arrow
+                        input |= InputFlags::ARROW_DOWN;
                 }
             }
         }
 
-        // Handle chat activation
         if (c == 't' || c == 'T')
         {
             if (chatCallback)
@@ -227,12 +223,10 @@ std::string InputHandler::getChatInput()
     if (!chatMode)
         return "";
 
-    // Save terminal settings
     struct termios oldt, newt;
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
 
-    // Enable echo and canonical mode for chat input
     disableRawMode();
     terminal::showCursor();
     newt.c_lflag |= (ECHO | ICANON);
@@ -244,7 +238,6 @@ std::string InputHandler::getChatInput()
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-    // Get the input
     std::string input;
     std::getline(std::cin, input);
 
@@ -253,10 +246,8 @@ std::string InputHandler::getChatInput()
         std::cerr << "[WARN] STDIN_FILENO invalid @ getChatInput, skipping terminal ops" << std::endl;
         return "";
     }
-    // Restore raw mode settings
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
-    // Return the input
     return input;
 }
 

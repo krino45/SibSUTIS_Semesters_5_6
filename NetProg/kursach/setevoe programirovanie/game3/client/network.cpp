@@ -51,7 +51,6 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
     this->udpPort = udpPort;
     this->username = username;
 
-    // Create UDP socket
     udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udpSocket == -1)
     {
@@ -59,7 +58,6 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
         return false;
     }
 
-    // Bind UDP socket to receive messages
     sockaddr_in clientAddr{};
     clientAddr.sin_family = AF_INET;
     clientAddr.sin_port = htons(udpPort);
@@ -87,7 +85,7 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
     ConnectRequest request;
     strncpy(request.username, username.c_str(), sizeof(request.username));
     request.udpPort = udpPort;
-    request.tcpPort = tcpPort; // For direct player-to-player chat
+    request.tcpPort = tcpPort; // For player-to-player chat
     request.mmr = 69;          // unneeded
 
     std::vector<uint8_t> packet = createPacket(MessageType::CONNECT_REQUEST, 0, &request, sizeof(request));
@@ -154,7 +152,7 @@ bool NetworkManager::connectToServer(const std::string &serverAddress, uint16_t 
             }
         }
 
-        startListening(); // Continue game packet listening
+        startListening();
     });
     connectionThread.detach();
 
@@ -211,7 +209,6 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
         std::cout << "You are player " << (response->isPlayer1 ? "1" : "2") << std::endl;
         isPlayer1 = response->isPlayer1;
 
-        // Store data / notify game
         std::lock_guard<std::mutex> lock(callbackMutex);
         pendingResponse = *response;
         hasPendingResponse = true;
@@ -222,7 +219,6 @@ void NetworkManager::handlePacket(const std::vector<uint8_t> &packet)
     case MessageType::GAME_STATE_UPDATE: {
         if (packet.size() >= sizeof(NetworkHeader) + sizeof(GameState))
         {
-            // Parse game state and update the local game state
             GameState state;
             if (state.deserialize(std::vector<uint8_t>(packet.begin() + sizeof(NetworkHeader), packet.end())))
             {
@@ -328,10 +324,8 @@ std::vector<uint8_t> NetworkManager::receivePacket()
     {
         if (errno == EBADF)
         {
-            // Socket was closed, this is expected during shutdown
             return {};
         }
-        // Don't print error for EWOULDBLOCK or EAGAIN (non-blocking socket)
         if (errno != EWOULDBLOCK && errno != EAGAIN)
         {
             perror("recvfrom");
@@ -417,20 +411,22 @@ bool NetworkManager::startChatServer(uint16_t port)
             return;
         }
 
+        struct timeval timeout;
+        timeout.tv_sec = 2;
+        timeout.tv_usec = 0;
+        setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
         std::vector<uint8_t> buffer(sizeof(NetworkHeader) + sizeof(ChatMessageData));
         while (chatRunning)
         {
             ssize_t bytes = recv(clientSocket, buffer.data(), buffer.size(), 0);
             if (bytes <= 0)
             {
-                if (bytes == 0)
+                if (errno == EWOULDBLOCK || errno == EAGAIN)
                 {
-                    // std::cerr << "Connection closed by peer." << std::endl;
+                    continue;
                 }
-                else
-                {
-                    std::cerr << "recv error: " << strerror(errno) << std::endl;
-                }
+                std::cerr << "recv error: " << strerror(errno) << std::endl;
                 break;
             }
 
@@ -460,6 +456,11 @@ bool NetworkManager::connectToChat(const std::string &address, uint16_t port)
         return false;
     }
 
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+    setsockopt(tcpSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
     sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);
@@ -480,14 +481,11 @@ bool NetworkManager::connectToChat(const std::string &address, uint16_t port)
             ssize_t bytes = recv(tcpSocket, buffer.data(), buffer.size(), 0);
             if (bytes <= 0)
             {
-                if (bytes == 0)
+                if (errno == EWOULDBLOCK || errno == EAGAIN)
                 {
-                    // std::cerr << "Connection closed by peer." << std::endl;
+                    continue;
                 }
-                else
-                {
-                    std::cerr << "recv error: " << strerror(errno) << std::endl;
-                }
+                std::cerr << "recv error: " << strerror(errno) << std::endl;
                 break;
             }
             std::lock_guard<std::mutex> lock(chatMutex);

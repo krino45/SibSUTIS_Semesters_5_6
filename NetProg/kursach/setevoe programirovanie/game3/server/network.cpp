@@ -293,17 +293,23 @@ uint32_t NetworkManager::findGameIdForClient(const std::string &clientId)
 
 void NetworkManager::handleClientDisconnect(const std::string &clientId, bool notifyOthers)
 {
-    // First check if client exists to avoid unnecessary work
     {
         std::lock_guard<std::mutex> lock(clientsMutex);
         auto it = clientIdToIndex.find(clientId);
         if (it == clientIdToIndex.end())
+        {
+            std::cout << "Cleint does not exist!\n";
             return;
+        }
     }
 
     if (notifyOthers)
     { // primary disconnectee
-        matchmaker->handlePlayerDisconnect(clientId);
+        matchmaker->handlePlayerDisconnect(clientId, true);
+    }
+    else
+    {
+        matchmaker->handlePlayerDisconnect(clientId, false);
     }
 
     // Get game info first before modifying any data structures
@@ -404,7 +410,7 @@ void NetworkManager::sendToClient(const std::string &address, uint16_t port, con
     clientAddr.sin_family = AF_INET;
     clientAddr.sin_port = htons(port);
 
-    if (inet_pton(AF_INET, address.c_str(), &clientAddr.sin_addr) <= 0)
+    if (inet_pton(AF_INET, address.c_str(), &clientAddr.sin_addr.s_addr) <= 0)
     {
         std::cerr << "Invalid client address: " << address << std::endl;
         return;

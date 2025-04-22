@@ -25,10 +25,8 @@ class InputHandler
 
     void prepareForMenuInput();
 
-    // Initialize terminal for raw input
     bool initialize();
 
-    // Process any waiting input
     uint8_t poll();
 
     void forceQuit()
@@ -37,14 +35,11 @@ class InputHandler
         forcedQuit = true;
     }
 
-    // Enable/disable raw mode
     void enableRawMode();
     void disableRawMode();
 
-    // Check if we have input available
     bool hasInput();
 
-    // Callbacks
     void setQuitCallback(std::function<void()> callback)
     {
         quitCallback = callback;
@@ -54,7 +49,6 @@ class InputHandler
         chatCallback = callback;
     }
 
-    // For chat input
     void startChatMode();
     void stopChatMode();
     bool isInChatMode()

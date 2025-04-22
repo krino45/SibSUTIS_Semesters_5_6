@@ -80,7 +80,6 @@ void Game::update()
     {
         networkManager.sendPlayerInput(currentInput, gameState.frame);
 
-        // Receive and apply game state from server
         GameState receivedState;
         if (networkManager.receiveGameState(receivedState))
         {
@@ -142,7 +141,9 @@ void Game::handleInput()
 
     if (input & InputFlags::QUIT)
     {
+        currentInput = InputFlags::QUIT;
         running = false;
+        return;
     }
 
     currentInput = input;
@@ -204,11 +205,10 @@ void Game::updatePlayer2Paddle(uint8_t input)
 
 void Game::updateAI()
 {
-    // Simple AI: follow the ball
+    // ai follow the ball
     const float centerOfPaddle = gameState.player2.position.y + Paddle::HEIGHT / 2.0f;
     const float ballY = gameState.ball.position.y;
 
-    // Only move if the ball is coming towards the AI
     if (gameState.ball.velocity.x > 0)
     {
         if (ballY < centerOfPaddle - 1.0f)
@@ -261,12 +261,10 @@ void Game::toggleChat()
 
 void Game::addChatMessage(const ChatMessageData message)
 {
-    std::cout << "NEW CHAT MESSAGE: " << message.sender << ":" << message.content << std::endl;
+    // std::cout << "NEW CHAT MESSAGE: " << message.sender << ":" << message.content << std::endl;
 
-    // Add to the chat messages vector
     chatMessages.push_back(message);
 
-    // Limit the number of messages to display (keep the most recent ones)
     const size_t MAX_MESSAGES = 5;
     if (chatMessages.size() > MAX_MESSAGES)
     {

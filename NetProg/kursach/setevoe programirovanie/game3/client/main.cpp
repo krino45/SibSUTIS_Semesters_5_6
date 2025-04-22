@@ -124,9 +124,7 @@ int main()
             inputHandler.setChatCallback([&game]() { game->toggleChat(); });
             inputHandler.setQuitCallback([&]() {
                 networkManager.stopChat();
-                pong::ConnectResponse empty{};
-                game->setOpponentInfo(empty);
-                game->running = false;
+                game->ready = false;
             });
 
             networkManager.onMatchFound = [&](const pong::ConnectResponse &response) {
